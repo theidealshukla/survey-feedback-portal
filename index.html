@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+  <style>
+    body {
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .login-box {
+      background: white;
+      padding: 2.5rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 340px;
+    }
+    h2 {
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+      width: 100%;
+    }
+    button:hover {
+      background: #3367d6;
+    }
+    button img {
+      margin-right: 10px;
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-box">
+  <h2>Admin Login</h2>
+  <button id="googleSignIn">
+    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" />
+    Sign in with Google
+  </button>
+</div>
+
+<script>
+  // ✅ List of allowed admin emails
+  const allowedAdmins = [
+    "adarshshuklawork@gmail.com",
+    "someone@yourteam.com"
+  ];
+
+  // ✅ Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
+    authDomain: "smart-customer-support-portal.firebaseapp.com",
+    projectId: "smart-customer-support-portal"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  // ✅ Sign in with Google
+  document.getElementById("googleSignIn").addEventListener("click", () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+      .catch(error => {
+        alert("Login failed: " + error.message);
+      });
+  });
+
+  // ✅ Auth state + admin check
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      const email = user.email;
+      if (allowedAdmins.includes(email)) {
+        window.location.href = "admin.html";
+      } else {
+        alert("Access denied: You are not an authorized admin.");
+        firebase.auth().signOut();
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

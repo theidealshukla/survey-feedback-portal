@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      padding: 2rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logout {
+      background: #ff4d4d;
+      color: white;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .filters {
+      margin-bottom: 1rem;
+    }
+    .filters select {
+      padding: 0.5rem;
+      margin-right: 1rem;
+    }
+    .card {
+      background: white;
+      padding: 1.2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    .card h2 { font-size: 1.5rem; margin-bottom: 0.4rem; }
+    .card p { color: #555; font-size: 0.9rem; }
+    table {
+      width: 100%; border-collapse: collapse; background: white;
+      border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 10px; border-bottom: 1px solid #eee; text-align: left;
+    }
+    th { background: #f0f2f5; }
+    .btn {
+      background: #007bff; color: white; padding: 6px 10px;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+    }
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center;
+    }
+    .modal-content {
+      background: white; padding: 2rem; border-radius: 10px;
+      width: 90%; max-width: 500px; position: relative;
+    }
+    .close {
+      position: absolute; top: 10px; right: 15px; font-size: 1.2rem;
+      cursor: pointer; color: #888;
+    }
+    #statusUpdate {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Admin Dashboard</h1>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h2 id="totalSubmissions">0</h2><p>Total Submissions</p></div>
+    <div class="card"><h2 id="openTickets">0</h2><p>Open Tickets</p></div>
+    <div class="card"><h2 id="resolvedToday">0</h2><p>Resolved Today</p></div>
+    <div class="card"><h2 id="avgNPS">-</h2><p>Avg NPS</p></div>
+  </div>
+
+  <div class="filters">
+    <select id="filterType" onchange="loadDashboard()">
+      <option value="all">All Types</option>
+      <option value="complaint">Complaint</option>
+      <option value="survey">Survey</option>
+    </select>
+    <select id="filterStatus" onchange="loadDashboard()">
+      <option value="all">All Status</option>
+      <option value="open">Open</option>
+      <option value="resolved">Resolved</option>
+    </select>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Date</th><th>Action</th></tr>
+    </thead>
+    <tbody id="dataTable"></tbody>
+  </table>
+
+  <div class="modal" id="viewModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h3>Submission Details</h3>
+      <div id="modalDetails"></div>
+      <div id="statusUpdate"></div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
+      authDomain: "smart-customer-support-portal.firebaseapp.com",
+      projectId: "smart-customer-support-portal"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    firebase.auth().onAuthStateChanged((user) => {
+      if (!user) window.location.href = "login.html";
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => location.href = "login.html");
+    }
+
+    function closeModal() {
+      document.getElementById('viewModal').style.display = 'none';
+    }
+
+    async function showModal(docId, isComplaint, details, currentStatus) {
+      document.getElementById('modalDetails').innerHTML = details;
+      if (isComplaint) {
+        document.getElementById('statusUpdate').innerHTML = `
+          <label>Change Status:</label>
+          <select id="newStatus">
+            <option value="open" ${currentStatus === 'open' ? 'selected' : ''}>Open</option>
+            <option value="resolved" ${currentStatus === 'resolved' ? 'selected' : ''}>Resolved</option>
+          </select>
+          <button onclick="updateStatus('${docId}')">Update</button>
+        `;
+      } else {
+        document.getElementById('statusUpdate').innerHTML = "";
+      }
+      document.getElementById('viewModal').style.display = 'flex';
+    }
+
+    async function updateStatus(id) {
+      const newStatus = document.getElementById('newStatus').value;
+      await db.collection("complaints").doc(id).update({ status: newStatus });
+      closeModal();
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      let total = 0, open = 0, resolvedToday = 0;
+      let promoters = 0, passives = 0, detractors = 0, totalResponses = 0;
+      const today = new Date().toISOString().split('T')[0];
+      const typeFilter = document.getElementById("filterType").value;
+      const statusFilter = document.getElementById("filterStatus").value;
+      document.getElementById("dataTable").innerHTML = "";
+
+      const complaints = await db.collection("complaints").get();
+      complaints.forEach(doc => {
+        const data = doc.data();
+        total++;
+        if (data.status === "open") open++;
+        if (data.status === "resolved" && data.createdAt?.toDate().toISOString().startsWith(today)) resolvedToday++;
+
+        if ((typeFilter === "complaint" || typeFilter === "all") &&
+            (statusFilter === data.status || statusFilter === "all")) {
+          const details = `
+            <p><strong>Name:</strong> ${data.name}</p>
+            <p><strong>Email:</strong> ${data.email}</p>
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Date:</strong> ${data.createdAt?.toDate().toLocaleDateString()}</p>
+            <p><strong>Message:</strong> ${data.message}</p>`;
+
+          document.getElementById("dataTable").innerHTML += `
+            <tr><td>${data.name}</td><td>${data.email}</td><td>Complaint</td>
+            <td>${data.status}</td><td>${data.createdAt?.toDate().toLocaleDateString()}</td>
+            <td><button class="btn" onclick='showModal("${doc.id}", true, ` + JSON.stringify(details) + `, "${data.status}")'>View</button></td></tr>`;
+        }
+      });
+
+      const surveys = await db.collection("surveys").get();
+      surveys.forEach(doc => {
+        const data = doc.data();
+        total++;
+
+        if (data.npsScore != null) {
+          const score = parseInt(data.npsScore);
+          totalResponses++;
+          if (score >= 9) promoters++;
+          else if (score >= 7) passives++;
+          else detractors++;
+        }
+
+        if (typeFilter === "survey" || typeFilter === "all") {
+          const details = `
+            <p><strong>Name:</strong> ${data.name}</p>
+            <p><strong>Email:</strong> ${data.email}</p>
+            <p><strong>NPS Score:</strong> ${data.npsScore}</p>
+            <p><strong>Date:</strong> ${data.createdAt?.toDate().toLocaleDateString()}</p>
+            <p><strong>Feedback:</strong> ${data.feedback}</p>`;
+
+          document.getElementById("dataTable").innerHTML += `
+            <tr><td>${data.name}</td><td>${data.email}</td><td>Survey</td>
+            <td>-</td><td>${data.createdAt?.toDate().toLocaleDateString()}</td>
+            <td><button class="btn" onclick='showModal("${doc.id}", false, ` + JSON.stringify(details) + `)'>View</button></td></tr>`;
+        }
+      });
+
+      let nps = "-";
+      if (totalResponses > 0) {
+        nps = Math.round(((promoters - detractors) / totalResponses) * 100);
+      }
+
+      document.getElementById("totalSubmissions").innerText = total;
+      document.getElementById("openTickets").innerText = open;
+      document.getElementById("resolvedToday").innerText = resolvedToday;
+      document.getElementById("avgNPS").innerText = nps;
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

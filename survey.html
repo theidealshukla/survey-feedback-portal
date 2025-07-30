@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Survey & Complaint Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    emailjs.init("NqzIwh4ok1CVLyylH"); // Your EmailJS public key
+  </script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .form-box, .thank-you {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .top-bar a {
+      color: #007bff;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    label {
+      margin-top: 1rem;
+      display: block;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      margin-top: 1.5rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px;
+      width: 100%;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .thank-you {
+      text-align: center;
+      display: none;
+    }
+    .emoji {
+      font-size: 2.5rem;
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Survey Form -->
+<div class="form-box" id="surveyBox">
+  <div class="top-bar">
+    <h2>Product Experience Survey</h2>
+    <a href="#" id="goToComplaint">Raise a Complaint</a>
+  </div>
+  <form id="surveyForm">
+    <label>Name</label>
+    <input type="text" id="s-name" required />
+
+    <label>Email</label>
+    <input type="email" id="s-email" required />
+
+    <label>How would you rate the product quality?</label>
+    <select id="s-quality" required>
+      <option value="">Select</option>
+      <option>Excellent</option>
+      <option>Good</option>
+      <option>Average</option>
+      <option>Poor</option>
+    </select>
+
+    <label>Ease of use?</label>
+    <select id="s-ease" required>
+      <option value="">Select</option>
+      <option>Very Easy</option>
+      <option>Easy</option>
+      <option>Neutral</option>
+      <option>Difficult</option>
+    </select>
+
+    <label>Would you recommend us?</label>
+    <select id="s-recommend" required>
+      <option value="">Select</option>
+      <option>Definitely</option>
+      <option>Maybe</option>
+      <option>Not Sure</option>
+      <option>No</option>
+    </select>
+    <!-- INSIDE SURVEY FORM -->
+
+<label>On a scale of 0 to 10, how likely are you to recommend our product/service to others?</label>
+<select id="s-nps" required>
+  <option value="">Select</option>
+  <option value="10">10 - Extremely likely</option>
+  <option value="9">9</option>
+  <option value="8">8</option>
+  <option value="7">7</option>
+  <option value="6">6</option>
+  <option value="5">5</option>
+  <option value="4">4</option>
+  <option value="3">3</option>
+  <option value="2">2</option>
+  <option value="1">1</option>
+  <option value="0">0 - Not at all likely</option>
+</select>
+
+
+    <label>Additional Feedback</label>
+    <textarea id="s-feedback" rows="4"></textarea>
+
+    <button type="submit">Submit Survey</button>
+  </form>
+</div>
+
+<!-- Complaint Form -->
+<div class="form-box" id="complaintBox" style="display: none;">
+  <div class="top-bar">
+    <h2>Raise a Complaint / Query</h2>
+    <a href="#" id="goToSurvey">Back to Survey</a>
+  </div>
+  <form id="complaintForm">
+    <label>Name</label>
+    <input type="text" id="c-name" required />
+
+    <label>Email</label>
+    <input type="email" id="c-email" required />
+
+    <label>Complaint Type</label>
+    <select id="c-type" required>
+      <option value="">Select</option>
+      <option>Service Delay</option>
+      <option>Product Issue</option>
+      <option>Staff Behavior</option>
+      <option>Other</option>
+    </select>
+
+    <label>Message</label>
+    <textarea id="c-msg" rows="5" required></textarea>
+
+    <button type="submit">Submit Complaint</button>
+  </form>
+</div>
+
+<!-- Thank You Screen -->
+<div class="thank-you" id="thankYouBox">
+  <div class="emoji">🙏</div>
+  <h2>Thank you for your time!</h2>
+  <p>Your response has been recorded.</p>
+  <p id="ticketInfo" style="font-weight: bold;"></p>
+</div>
+
+<script>
+  // Firebase Setup
+  const firebaseConfig = {
+    apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
+    authDomain: "smart-customer-support-portal.firebaseapp.com",
+    projectId: "smart-customer-support-portal",
+    storageBucket: "smart-customer-support-portal.firebasestorage.app",
+    messagingSenderId: "59178725363",
+    appId: "1:59178725363:web:c9063beed6217833926c86",
+    measurementId: "G-372XHVDCSY"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Toggle between forms
+  document.getElementById("goToComplaint").onclick = (e) => {
+    e.preventDefault();
+    document.getElementById("surveyBox").style.display = "none";
+    document.getElementById("complaintBox").style.display = "block";
+  };
+  document.getElementById("goToSurvey").onclick = (e) => {
+    e.preventDefault();
+    document.getElementById("complaintBox").style.display = "none";
+    document.getElementById("surveyBox").style.display = "block";
+  };
+
+  // Ticket ID Generator
+  function generateTicketId() {
+    return "CMP-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+  }
+
+  // Survey Submit
+  document.getElementById("surveyForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const name = document.getElementById("s-name").value;
+    const email = document.getElementById("s-email").value;
+    const quality = document.getElementById("s-quality").value;
+    const ease = document.getElementById("s-ease").value;
+    const recommend = document.getElementById("s-recommend").value;
+    const npsScore = parseInt(document.getElementById("s-nps").value);
+    const feedback = document.getElementById("s-feedback").value;
+
+    db.collection("surveys").add({
+      name,
+      email,
+      quality,
+      ease,
+      recommend,
+      npsScore,
+      feedback,
+      createdAt: new Date()
+    }).then(() => {
+      document.getElementById("surveyBox").style.display = "none";
+      document.getElementById("ticketInfo").innerText = ""; // No ticket for survey
+      document.getElementById("thankYouBox").style.display = "block";
+    });
+  });
+
+  // Complaint Submit
+  document.getElementById("complaintForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const name = document.getElementById("c-name").value;
+    const email = document.getElementById("c-email").value;
+    const type = document.getElementById("c-type").value;
+    const message = document.getElementById("c-msg").value;
+    const ticketId = generateTicketId();
+
+    // Save to Firestore
+    db.collection("complaints").add({
+      name,
+      email,
+      type,
+      message,
+      ticketId,
+      status: "Open",
+      createdAt: new Date()
+    });
+
+    // Send email via EmailJS
+    emailjs.send("service_7y35doh", "template_ypnghxy", {
+      to_name: name,
+      to_email: email,
+      message: message,
+      ticket_id: ticketId
+    });
+
+    // Show thank you screen
+    document.getElementById("complaintBox").style.display = "none";
+    document.getElementById("ticketInfo").innerText = `Your Ticket ID is: ${ticketId}`;
+    document.getElementById("thankYouBox").style.display = "block";
+  });
+</script>
+
+</body>
+</html>
