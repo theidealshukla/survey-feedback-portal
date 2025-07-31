@@ -55,19 +55,25 @@ document.getElementById("googleSignIn").addEventListener("click", () => {
 });
 
 // ✅ Auth state + admin check
-firebase.auth().onAuthStateChanged((user) => {
+// firebase.auth().onAuthStateChanged((user) => {
+//   if (user) {
+//     const email = user.email;
+//     if (allowedAdmins.includes(email)) {
+//       window.location.href = "admin.html";
+
+
+//     } else {
+//       alert("Access denied: You are not an authorized admin.");
+//       firebase.auth().signOut();
+//     }
+//   }
+// });
+  firebase.auth().onAuthStateChanged((user) => {
   if (user) {
-    const email = user.email;
-    if (allowedAdmins.includes(email)) {
-      window.location.href = "admin.html";
-
-
-    } else {
-      alert("Access denied: You are not an authorized admin.");
-      firebase.auth().signOut();
-    }
+    window.location.href = "admin.html";
   }
 });
+
 </script>
 </body>
 </html>
