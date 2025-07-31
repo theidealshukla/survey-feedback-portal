@@ -8,6 +8,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="admin.css" />
+  <style>
+   
+  </style>
 </head>
 <body>
   <div class="header">
@@ -61,37 +64,64 @@
     const db = firebase.firestore();
 
     firebase.auth().onAuthStateChanged((user) => {
-      if (!user) window.location.href = "index.html";  // Changed from login.html
+      if (!user) window.location.href = "index.html";
     });
 
     function logout() {
-      firebase.auth().signOut().then(() => location.href = "index.html");  // Changed from login.html
+      firebase.auth().signOut().then(() => location.href = "index.html");
     }
 
     function closeModal() {
       document.getElementById('viewModal').style.display = 'none';
     }
 
-    async function showModal(docId, isComplaint, details, currentStatus) {
-      document.getElementById('modalDetails').innerHTML = details;
+    async function showModal(docId, isComplaint, _, currentStatus, data = {}) {
+      document.getElementById('modalDetails').innerHTML = `
+        <p><strong>Name:</strong> ${data.name}</p>
+        <p><strong>Email:</strong> ${data.email}</p>
+        <p><strong>Message:</strong> ${data.message}</p>
+      `;
+
       if (isComplaint) {
         document.getElementById('statusUpdate').innerHTML = `
-          <label>Change Status:</label>
+          <label>Status:</label>
           <select id="newStatus">
             <option value="open" ${currentStatus === 'open' ? 'selected' : ''}>Open</option>
             <option value="resolved" ${currentStatus === 'resolved' ? 'selected' : ''}>Resolved</option>
           </select>
-          <button onclick="updateStatus('${docId}')">Update</button>
+
+          <label>Investigation Notes:</label>
+          <textarea id="investigationNotes">${data.investigationNotes || ''}</textarea>
+
+          <label>Root Cause (RCA):</label>
+          <textarea id="rca">${data.rca || ''}</textarea>
+
+          <label>Corrective/Preventive Action (CAPA):</label>
+          <textarea id="capa">${data.capa || ''}</textarea>
+
+          <button onclick="saveUpdate('${docId}')">Update</button>
         `;
       } else {
         document.getElementById('statusUpdate').innerHTML = "";
       }
+
       document.getElementById('viewModal').style.display = 'flex';
     }
 
-    async function updateStatus(id) {
-      const newStatus = document.getElementById('newStatus').value;
-      await db.collection("complaints").doc(id).update({ status: newStatus });
+    async function saveUpdate(docId) {
+      const newStatus = document.getElementById("newStatus").value;
+      const investigationNotes = document.getElementById("investigationNotes").value;
+      const rca = document.getElementById("rca").value;
+      const capa = document.getElementById("capa").value;
+
+      await db.collection("complaints").doc(docId).update({
+        status: newStatus,
+        investigationNotes,
+        rca,
+        capa,
+        updatedAt: new Date()
+      });
+
       closeModal();
       loadDashboard();
     }
@@ -113,17 +143,11 @@
 
         if ((typeFilter === "complaint" || typeFilter === "all") &&
             (statusFilter === data.status || statusFilter === "all")) {
-          const details = `
-            <p><strong>Name:</strong> ${data.name}</p>
-            <p><strong>Email:</strong> ${data.email}</p>
-            <p><strong>Status:</strong> ${data.status}</p>
-            <p><strong>Date:</strong> ${data.createdAt?.toDate().toLocaleDateString()}</p>
-            <p><strong>Message:</strong> ${data.message}</p>`;
-
           document.getElementById("dataTable").innerHTML += `
             <tr><td>${data.name}</td><td>${data.email}</td><td>Complaint</td>
             <td>${data.status}</td><td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-            <td><button class="btn" onclick='showModal("${doc.id}", true, ` + JSON.stringify(details) + `, "${data.status}")'>View</button></td></tr>`;
+            <td><button class="btn" onclick='showModal("${doc.id}", true, "", "${data.status}", ${JSON.stringify(data)})'>View</button></td></tr>
+          `;
         }
       });
 
@@ -141,17 +165,11 @@
         }
 
         if (typeFilter === "survey" || typeFilter === "all") {
-          const details = `
-            <p><strong>Name:</strong> ${data.name}</p>
-            <p><strong>Email:</strong> ${data.email}</p>
-            <p><strong>NPS Score:</strong> ${data.npsScore}</p>
-            <p><strong>Date:</strong> ${data.createdAt?.toDate().toLocaleDateString()}</p>
-            <p><strong>Feedback:</strong> ${data.feedback}</p>`;
-
           document.getElementById("dataTable").innerHTML += `
             <tr><td>${data.name}</td><td>${data.email}</td><td>Survey</td>
             <td>-</td><td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-            <td><button class="btn" onclick='showModal("${doc.id}", false, ` + JSON.stringify(details) + `)'>View</button></td></tr>`;
+            <td><button class="btn" onclick='showModal("${doc.id}", false, "", "-", ${JSON.stringify(data)})'>View</button></td></tr>
+          `;
         }
       });
 
