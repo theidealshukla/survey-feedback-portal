@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Smart Customer Support Portal 🚀
 
 A lightweight and modern web portal that allows customers to submit surveys, feedback, and complaints—and enables admins to monitor responses, resolve issues, and track Net Promoter Scores (NPS). Built using **HTML, CSS, Firebase, and JavaScript**, this project features Google Authentication, ticket generation, email notifications, and a dashboard with advanced filtering and RCA/CAPA inputs.
@@ -167,3 +168,6 @@ Made with ❤️ by [Adarsh Shukla](https://github.com/theidealshukla)
 ## 📜 License
 
 MIT License - Use freely, give credit 💌
+=======
+# survey-feedback-portal
+>>>>>>> f19e038 (Initial commit)
