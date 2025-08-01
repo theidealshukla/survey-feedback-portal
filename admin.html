@@ -1,190 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="admin.css" />
-  <style>
-   
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Admin Dashboard</h1>
-    <button class="logout" onclick="logout()">Logout</button>
-  </div>
-
-  <div class="cards">
-    <div class="card"><h2 id="totalSubmissions">0</h2><p>Total Submissions</p></div>
-    <div class="card"><h2 id="openTickets">0</h2><p>Open Tickets</p></div>
-    <div class="card"><h2 id="resolvedToday">0</h2><p>Resolved Today</p></div>
-    <div class="card"><h2 id="avgNPS">-</h2><p>Avg NPS</p></div>
-  </div>
-
-  <div class="filters">
-    <select id="filterType" onchange="loadDashboard()">
-      <option value="all">All Types</option>
-      <option value="complaint">Complaint</option>
-      <option value="survey">Survey</option>
-    </select>
-    <select id="filterStatus" onchange="loadDashboard()">
-      <option value="all">All Status</option>
-      <option value="open">Open</option>
-      <option value="resolved">Resolved</option>
-    </select>
-  </div>
-
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Date</th><th>Action</th></tr>
-    </thead>
-    <tbody id="dataTable"></tbody>
-  </table>
-
-  <div class="modal" id="viewModal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal()">&times;</span>
-      <h3>Submission Details</h3>
-      <div id="modalDetails"></div>
-      <div id="statusUpdate"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="admin.css" />
+    <link rel="icon" type="image/png" href="icons/A1.png" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Admin Dashboard</h1>
+      <button class="logout" onclick="logout()">Logout</button>
     </div>
-  </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
-      authDomain: "smart-customer-support-portal.firebaseapp.com",
-      projectId: "smart-customer-support-portal"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    <div class="cards">
+      <div class="card">
+        <h2 id="totalSubmissions">0</h2>
+        <p>Total Submissions</p>
+      </div>
+      <div class="card">
+        <h2 id="openTickets">0</h2>
+        <p>Open Tickets</p>
+      </div>
+      <div class="card">
+        <h2 id="resolvedToday">0</h2>
+        <p>Resolved Today</p>
+      </div>
+      <div class="card">
+        <h2 id="avgNPS">-</h2>
+        <p>Avg NPS</p>
+      </div>
+    </div>
 
-    firebase.auth().onAuthStateChanged((user) => {
-      if (!user) window.location.href = "index.html";
-    });
+    <div class="filters">
+      <select id="filterType" onchange="loadDashboard()">
+        <option value="all">All Types</option>
+        <option value="complaint">Complaint</option>
+        <option value="survey">Survey</option>
+      </select>
+      <select id="filterStatus" onchange="loadDashboard()">
+        <option value="all">All Status</option>
+        <option value="open">Open</option>
+        <option value="resolved">Resolved</option>
+      </select>
+    </div>
 
-    function logout() {
-      firebase.auth().signOut().then(() => location.href = "index.html");
-    }
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Sentiment</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="dataTable"></tbody>
+    </table>
 
-    function closeModal() {
-      document.getElementById('viewModal').style.display = 'none';
-    }
+    <div class="modal" id="viewModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3>Submission Details</h3>
+        <div id="modalDetails"></div>
+        <div id="statusUpdate"></div>
+      </div>
+    </div>
 
-    async function showModal(docId, isComplaint, _, currentStatus, data = {}) {
-      document.getElementById('modalDetails').innerHTML = `
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
+        authDomain: "smart-customer-support-portal.firebaseapp.com",
+        projectId: "smart-customer-support-portal",
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      firebase.auth().onAuthStateChanged((user) => {
+        if (!user) window.location.href = "index.html";
+      });
+
+      function logout() {
+        firebase
+          .auth()
+          .signOut()
+          .then(() => (location.href = "index.html"));
+      }
+
+      function closeModal() {
+        document.getElementById("viewModal").style.display = "none";
+      }
+
+      function getSentiment(text) {
+        const positiveWords = [
+          "great",
+          "good",
+          "excellent",
+          "amazing",
+          "happy",
+          "love",
+          "satisfied",
+        ];
+        const negativeWords = [
+          "bad",
+          "poor",
+          "terrible",
+          "unhappy",
+          "hate",
+          "worst",
+          "delay",
+          "issue",
+        ];
+        const lower = text.toLowerCase();
+        let score = 0;
+
+        positiveWords.forEach((word) => {
+          if (lower.includes(word)) score += 1;
+        });
+        negativeWords.forEach((word) => {
+          if (lower.includes(word)) score -= 1;
+        });
+
+        if (score > 0) return "Positive";
+        if (score < 0) return "Negative";
+        return "Neutral";
+      }
+
+      async function showModal(
+        docId,
+        isComplaint,
+        _,
+        currentStatus,
+        data = {}
+      ) {
+        let sentiment = getSentiment(
+          isComplaint ? data.message || "" : data.feedback || ""
+        );
+
+        document.getElementById("modalDetails").innerHTML = `
         <p><strong>Name:</strong> ${data.name}</p>
         <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Message:</strong> ${data.message}</p>
+        ${
+          isComplaint
+            ? `<p><strong>Ticket ID:</strong> <span style="color:#007bff">${
+                data.ticketId || "N/A"
+              }</span></p>`
+            : ""
+        }
+        <p><strong>${isComplaint ? "Message" : "Feedback"}:</strong> ${
+          isComplaint ? data.message : data.feedback || "-"
+        }</p>
+        <p><strong>Sentiment:</strong> ${sentiment}</p>
       `;
 
-      if (isComplaint) {
-        document.getElementById('statusUpdate').innerHTML = `
+        if (isComplaint) {
+          document.getElementById("statusUpdate").innerHTML = `
           <label>Status:</label>
           <select id="newStatus">
-            <option value="open" ${currentStatus === 'open' ? 'selected' : ''}>Open</option>
-            <option value="resolved" ${currentStatus === 'resolved' ? 'selected' : ''}>Resolved</option>
+            <option value="open" ${
+              currentStatus === "open" ? "selected" : ""
+            }>Open</option>
+            <option value="resolved" ${
+              currentStatus === "resolved" ? "selected" : ""
+            }>Resolved</option>
           </select>
 
           <label>Investigation Notes:</label>
-          <textarea id="investigationNotes">${data.investigationNotes || ''}</textarea>
+          <textarea id="investigationNotes">${
+            data.investigationNotes || ""
+          }</textarea>
 
           <label>Root Cause (RCA):</label>
-          <textarea id="rca">${data.rca || ''}</textarea>
+          <textarea id="rca">${data.rca || ""}</textarea>
 
           <label>Corrective/Preventive Action (CAPA):</label>
-          <textarea id="capa">${data.capa || ''}</textarea>
+          <textarea id="capa">${data.capa || ""}</textarea>
 
           <button onclick="saveUpdate('${docId}')">Update</button>
         `;
-      } else {
-        document.getElementById('statusUpdate').innerHTML = "";
+        } else {
+          document.getElementById("modalDetails").innerHTML += `
+    <p><strong>Product Quality:</strong> ${data.quality || "-"}</p>
+    <p><strong>Ease of Use:</strong> ${data.ease || "-"}</p>
+    <p><strong>Would Recommend:</strong> ${data.recommend || "-"}</p>
+    <p><strong>NPS Score:</strong> ${data.npsScore || "-"}</p>
+    <p><strong>Additional Feedback:</strong> ${data.feedback || "-"}</p>
+  `;
+          document.getElementById("statusUpdate").innerHTML = "";
+        }
+
+        document.getElementById("viewModal").style.display = "flex";
       }
 
-      document.getElementById('viewModal').style.display = 'flex';
-    }
+      async function saveUpdate(docId) {
+        const newStatus = document.getElementById("newStatus").value;
+        const investigationNotes =
+          document.getElementById("investigationNotes").value;
+        const rca = document.getElementById("rca").value;
+        const capa = document.getElementById("capa").value;
 
-    async function saveUpdate(docId) {
-      const newStatus = document.getElementById("newStatus").value;
-      const investigationNotes = document.getElementById("investigationNotes").value;
-      const rca = document.getElementById("rca").value;
-      const capa = document.getElementById("capa").value;
+        await db.collection("complaints").doc(docId).update({
+          status: newStatus,
+          investigationNotes,
+          rca,
+          capa,
+          updatedAt: new Date(),
+        });
 
-      await db.collection("complaints").doc(docId).update({
-        status: newStatus,
-        investigationNotes,
-        rca,
-        capa,
-        updatedAt: new Date()
-      });
+        closeModal();
+        loadDashboard();
+      }
 
-      closeModal();
+      async function loadDashboard() {
+        let total = 0,
+          open = 0,
+          resolvedToday = 0;
+        let promoters = 0,
+          passives = 0,
+          detractors = 0,
+          totalResponses = 0;
+        const today = new Date().toISOString().split("T")[0];
+        const typeFilter = document.getElementById("filterType").value;
+        const statusFilter = document.getElementById("filterStatus").value;
+        document.getElementById("dataTable").innerHTML = "";
+
+        const complaints = await db.collection("complaints").get();
+        complaints.forEach((doc) => {
+          const data = doc.data();
+          total++;
+          if (data.status === "open") open++;
+          if (
+            data.status === "resolved" &&
+            data.createdAt?.toDate().toISOString().startsWith(today)
+          )
+            resolvedToday++;
+
+          if (
+            (typeFilter === "complaint" || typeFilter === "all") &&
+            (statusFilter === data.status || statusFilter === "all")
+          ) {
+            const sentiment = getSentiment(data.message || "");
+
+            document.getElementById("dataTable").innerHTML += `
+            <tr>
+              <td>${data.name}</td>
+              <td>${data.email}</td>
+              <td>Complaint</td>
+              <td>
+                <button class="status-pill ${data.status === 'open' ? 'yellow' : 'green'}">${data.status}</button>
+
+              </td>
+              <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
+              <td><span class="sentiment ${sentiment.toLowerCase()}">${sentiment}</span></td>
+              <td>
+                <button class="btn" onclick='showModal("${
+                  doc.id
+                }", true, "", "${data.status}", ${JSON.stringify(
+              data
+            )})'>View</button>
+              </td>
+            </tr>
+          `;
+          }
+        });
+
+        const surveys = await db.collection("surveys").get();
+        surveys.forEach((doc) => {
+          const data = doc.data();
+          total++;
+
+          if (data.npsScore != null) {
+            const score = parseInt(data.npsScore);
+            totalResponses++;
+            if (score >= 9) promoters++;
+            else if (score >= 7) passives++;
+            else detractors++;
+          }
+
+          if (typeFilter === "survey" || typeFilter === "all") {
+            const sentiment = getSentiment(data.feedback || "");
+
+            document.getElementById("dataTable").innerHTML += `
+            <tr>
+              <td>${data.name}</td>
+              <td>${data.email}</td>
+              <td>Survey</td>
+              <td><button class="status-pill blue">N/A</button></td>
+
+
+              <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
+              <td><span class="sentiment ${sentiment.toLowerCase()}">${sentiment}</span></td>
+              <td>
+                <button class="btn" onclick='showModal("${
+                  doc.id
+                }", false, "", "-", ${JSON.stringify(data)})'>View</button>
+              </td>
+            </tr>
+          `;
+          }
+        });
+
+        let nps = "-";
+        if (totalResponses > 0) {
+          nps = Math.round(((promoters - detractors) / totalResponses) * 100);
+        }
+
+        document.getElementById("totalSubmissions").innerText = total;
+        document.getElementById("openTickets").innerText = open;
+        document.getElementById("resolvedToday").innerText = resolvedToday;
+
+        const avgNPS = document.getElementById("avgNPS");
+        avgNPS.innerText = nps;
+
+        if (nps === "-") {
+          avgNPS.style.color = "#888";
+        } else if (nps >= 70) {
+          avgNPS.style.color = "green";
+        } else if (nps >= 30) {
+          avgNPS.style.color = "#ff9800";
+        } else {
+          avgNPS.style.color = "red";
+        }
+      }
+
       loadDashboard();
-    }
-
-    async function loadDashboard() {
-      let total = 0, open = 0, resolvedToday = 0;
-      let promoters = 0, passives = 0, detractors = 0, totalResponses = 0;
-      const today = new Date().toISOString().split('T')[0];
-      const typeFilter = document.getElementById("filterType").value;
-      const statusFilter = document.getElementById("filterStatus").value;
-      document.getElementById("dataTable").innerHTML = "";
-
-      const complaints = await db.collection("complaints").get();
-      complaints.forEach(doc => {
-        const data = doc.data();
-        total++;
-        if (data.status === "open") open++;
-        if (data.status === "resolved" && data.createdAt?.toDate().toISOString().startsWith(today)) resolvedToday++;
-
-        if ((typeFilter === "complaint" || typeFilter === "all") &&
-            (statusFilter === data.status || statusFilter === "all")) {
-          document.getElementById("dataTable").innerHTML += `
-            <tr><td>${data.name}</td><td>${data.email}</td><td>Complaint</td>
-            <td>${data.status}</td><td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-            <td><button class="btn" onclick='showModal("${doc.id}", true, "", "${data.status}", ${JSON.stringify(data)})'>View</button></td></tr>
-          `;
-        }
-      });
-
-      const surveys = await db.collection("surveys").get();
-      surveys.forEach(doc => {
-        const data = doc.data();
-        total++;
-
-        if (data.npsScore != null) {
-          const score = parseInt(data.npsScore);
-          totalResponses++;
-          if (score >= 9) promoters++;
-          else if (score >= 7) passives++;
-          else detractors++;
-        }
-
-        if (typeFilter === "survey" || typeFilter === "all") {
-          document.getElementById("dataTable").innerHTML += `
-            <tr><td>${data.name}</td><td>${data.email}</td><td>Survey</td>
-            <td>-</td><td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-            <td><button class="btn" onclick='showModal("${doc.id}", false, "", "-", ${JSON.stringify(data)})'>View</button></td></tr>
-          `;
-        }
-      });
-
-      let nps = "-";
-      if (totalResponses > 0) {
-        nps = Math.round(((promoters - detractors) / totalResponses) * 100);
-      }
-
-      document.getElementById("totalSubmissions").innerText = total;
-      document.getElementById("openTickets").innerText = open;
-      document.getElementById("resolvedToday").innerText = resolvedToday;
-      document.getElementById("avgNPS").innerText = nps;
-    }
-
-    loadDashboard();
-  </script>
-</body>
+    </script>
+  </body>
 </html>
