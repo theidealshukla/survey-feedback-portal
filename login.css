@@ -1,5 +1,5 @@
 body {
-  background: #f0f2f5;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -8,7 +8,9 @@ body {
   margin: 0;
   padding: 20px;
   box-sizing: border-box;
-}.login-container {
+}
+
+.login-container {
   background: white;
   padding: 3rem 2.5rem;
   border-radius: 16px;
@@ -16,6 +18,12 @@ body {
   text-align: center;
   width: 100%;
   max-width: 400px;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Logo Image Styling */
@@ -41,46 +49,61 @@ h2 {
   font-weight: 600;
 }
 
+h1 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+/* Subtitle */
+.subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+
 /* Sign-in Button */
 .google-signin-btn {
-  background: #4285f4;
-  color: white;
-  border: none;
-  padding: 14px 24px;
+  background: white;
+  color: #444;
+  border: 1px solid #ddd;
   border-radius: 8px;
+  padding: 12px 24px;
   font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
   width: 100%;
-  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.25);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .google-signin-btn:hover {
-  background: #3367d6;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.35);
-}
-
-.google-signin-btn:active {
-  transform: translateY(0);
+  background: #f8f8f8;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .google-signin-btn img {
+  width: 24px;
+  height: 24px;
   margin-right: 12px;
-  width: 20px;
-  height: 20px;
+}
+
+/* Error Message */
+.error-message {
+    margin-top: 1rem;
+    color: #e74c3c;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    background-color: #fdeaea;
 }
 
 /* Powered By Text */
 .powered-by {
   margin-top: 2rem;
-  color: #888;
-  font-size: 0.8rem;
-  opacity: 0.85;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 /* Responsive Design */
