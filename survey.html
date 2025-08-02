@@ -1,283 +1,669 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Survey & Complaint Form</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <script>
-    emailjs.init("NqzIwh4ok1CVLyylH"); // Your EmailJS public key
-  </script>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <meta charset="UTF-8" />
+    <title>Customer Feedback Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script>
+      emailjs.init("NqzIwh4ok1CVLyylH"); // Your EmailJS public key
+    </script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-  <style>
+    <style>
+    /* Update existing root variables */
+    :root {
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --secondary: #64748b;
+        --success: #22c55e;
+        --background: #f8fafc;
+        --white: #ffffff;
+        --gray-100: #f1f5f9;
+        --gray-200: #e2e8f0;
+        --gray-300: #cbd5e1;
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --radius: 12px;
+    }
+
+    /* Replace the body styles */
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        background: var(--background);
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        line-height: 1.5;
+        color: #0f172a;
     }
-    .form-box, .thank-you {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+
+    /* Update container styles */
+    .container {
+        width: 100%;
+        max-width: 800px;  /* Reduced from 1000px */
+        margin: 0 auto;
     }
+
+    /* Update form-box styles */
+    .form-box {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        padding: 2rem;  /* Reduced from 2.5rem */
+        margin-bottom: 1rem;
+    }
+
+    /* Modern selector grid */
+    .type-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+        gap: 2rem;
+        padding: 1.5rem 0;
+    }
+
+    /* Classy animated box */
+    .type-btn {
+        flex: 1 1 0;
+        min-width: 220px;
+        max-width: 260px;
+        background: linear-gradient(135deg, #f8fafc 60%, #e0e7ff 100%);
+        border: 2.5px solid #6366f1; /* More visible border */
+        border-radius: 1.5rem;
+        box-shadow: 0 4px 24px -8px rgba(79,70,229,0.10);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        cursor: pointer;
+        transition: 
+            transform 0.25s cubic-bezier(.4,2,.3,1),
+            box-shadow 0.25s cubic-bezier(.4,2,.3,1),
+            background 0.25s,
+            border-color 0.25s;
+        position: relative;
+        outline: none;
+    }
+
+    /* Optional: Make border even more visible on hover/focus */
+    .type-btn:focus-visible,
+    .type-btn:hover {
+        border-color: #4338ca;
+    }
+
+    .type-btn:before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 1.5rem;
+        background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 0;
+    }
+
+    .type-btn:focus-visible,
+    .type-btn:hover {
+        transform: translateY(-8px) scale(1.04);
+        box-shadow: 0 8px 32px -8px rgba(79,70,229,0.18);
+        background: linear-gradient(135deg, #eef2ff 60%, #e0e7ff 100%);
+    }
+
+    .type-btn:focus-visible:before,
+    .type-btn:hover:before {
+        opacity: 0.08;
+    }
+
+    .type-btn span {
+        font-size: 2.8rem;
+        margin-bottom: 1rem;
+        z-index: 1;
+        transition: transform 0.3s;
+    }
+
+    .type-btn:hover span {
+        transform: scale(1.15) rotate(-8deg);
+    }
+
+    .type-btn-text {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #4f46e5;
+        z-index: 1;
+        letter-spacing: 0.01em;
+        margin-top: 0.5rem;
+    }
+
+    /* Update top-bar styles */
+    .top-bar h2 {
+        font-size: 1.75rem;  /* Reduced from 2rem */
+        font-weight: 700;
+        color: var(--primary);
+        text-align: center;
+        margin-bottom: 1.5rem;  /* Reduced from 2rem */
+    }
+
+    /* Add these form-specific styles */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s;
+        background-color: var(--white);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+        color: #9CA3AF;
+    }
+
+    .form-group select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+    }
+
+    button[type="submit"] {
+        width: 100%;
+        padding: 0.875rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    button[type="submit"]:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
     .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--gray-200);
     }
+
     .top-bar a {
-      color: #007bff;
-      font-size: 0.9rem;
-      text-decoration: none;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        transition: all 0.2s;
     }
-    h2 {
-      margin-top: 0;
+
+    .top-bar a:hover {
+        background: var(--gray-100);
     }
-    label {
-      margin-top: 1rem;
-      display: block;
-      font-weight: bold;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 0.3rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      margin-top: 1.5rem;
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 12px;
-      width: 100%;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
+
+    /* Thank you screen styles */
     .thank-you {
-      text-align: center;
-      display: none;
+        text-align: center;
+        padding: 3rem 2rem;
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
     }
-    .emoji {
-      font-size: 2.5rem;
-      animation: bounce 1.5s infinite;
+
+    .thank-you .emoji {
+        font-size: 4rem;
+        margin-bottom: 1rem;
     }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+
+    .thank-you h2 {
+        color: var(--primary);
+        margin-bottom: 1rem;
     }
-  </style>
+
+    .ticket-info {
+        display: inline-block;
+        margin-top: 1.5rem;
+        padding: 1rem 2rem;
+        background: var(--gray-100);
+        border-radius: var(--radius);
+        font-family: monospace;
+        font-size: 1.1rem;
+        color: var(--primary);
+    }
+
+    /* Required field indicator */
+    .form-group label[for]:after {
+        content: "*";
+        color: #EF4444;
+        margin-left: 4px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .form-box {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.625rem 0.875rem;
+        }
+    }
+
+    /* Update media queries */
+    @media (max-width: 768px) {
+        .type-buttons {
+            grid-template-columns: 1fr;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .type-btn {
+            padding: 2rem;
+        }
+
+        .type-btn span {
+            font-size: 3rem;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .type-buttons {
+            flex-direction: column;
+            gap: 1.2rem;
+            align-items: center;
+        }
+        .type-btn {
+            width: 100%;
+            max-width: 320px;
+        }
+    }
+</style>
 </head>
 <body>
+    <div class="container">
+        <!-- Type Selector -->
+        <div class="form-box" id="typeSelector">
+            <div class="top-bar">
+                <h2>How Can We Help You?</h2>
+            </div>
+            <div class="type-buttons">
+                <button type="button" onclick="showForm('feedback')" class="type-btn">
+                    <span>💫</span>
+                    <div class="type-btn-text">Product Feedback</div>
+                </button>
+                <button type="button" onclick="showForm('complaint')" class="type-btn">
+                    <span>⚡</span>
+                    <div class="type-btn-text">File a Complaint</div>
+                </button>
+                <button type="button" onclick="showForm('query')" class="type-btn">
+                    <span>💡</span>
+                    <div class="type-btn-text">General Query</div>
+                </button>
+            </div>
+        </div>
 
-<!-- Survey Form -->
-<div class="form-box" id="surveyBox">
-  <div class="top-bar">
-    <h2>Product Experience Survey</h2>
-    <a href="#" id="goToComplaint">Raise a Complaint</a>
-  </div>
-  <form id="surveyForm">
-    <label>Name</label>
-    <input type="text" id="s-name" required />
+        <!-- Survey Form -->
+        <div class="form-box" id="surveyBox" style="display: none">
+            <div class="top-bar">
+                <h2>Product Experience Survey</h2>
+                <a href="#" id="goToComplaint">Submit a Complaint</a>
+            </div>
+            <form id="surveyForm">
+                <div class="form-group">
+                    <label for="s-name">Full Name</label>
+                    <input type="text" id="s-name" required placeholder="Enter your name">
+                </div>
 
-    <label>Email</label>
-    <input type="email" id="s-email" required />
+                <div class="form-group">
+                    <label for="s-email">Email Address</label>
+                    <input type="email" id="s-email" required placeholder="Enter your email">
+                </div>
 
-    <label>How would you rate the product quality?</label>
-    <select id="s-quality" required>
-      <option value="">Select</option>
-      <option>Excellent</option>
-      <option>Good</option>
-      <option>Average</option>
-      <option>Poor</option>
-    </select>
+                <div class="form-group">
+                    <label for="s-quality">Product Quality Rating</label>
+                    <select id="s-quality" required>
+                        <option value="">Select rating</option>
+                        <option>Excellent</option>
+                        <option>Good</option>
+                        <option>Average</option>
+                        <option>Poor</option>
+                    </select>
+                </div>
 
-    <label>Ease of use?</label>
-    <select id="s-ease" required>
-      <option value="">Select</option>
-      <option>Very Easy</option>
-      <option>Easy</option>
-      <option>Neutral</option>
-      <option>Difficult</option>
-    </select>
+                <div class="form-group">
+                    <label for="s-ease">Ease of Use Rating</label>
+                    <select id="s-ease" required>
+                        <option value="">Select rating</option>
+                        <option>Very Easy</option>
+                        <option>Easy</option>
+                        <option>Neutral</option>
+                        <option>Difficult</option>
+                    </select>
+                </div>
 
-    <label>Would you recommend us?</label>
-    <select id="s-recommend" required>
-      <option value="">Select</option>
-      <option>Definitely</option>
-      <option>Maybe</option>
-      <option>Not Sure</option>
-      <option>No</option>
-    </select>
-    <!-- INSIDE SURVEY FORM -->
+                <div class="form-group">
+                    <label for="s-recommend">Likelihood to Recommend</label>
+                    <select id="s-recommend" required>
+                        <option value="">Select option</option>
+                        <option>Definitely</option>
+                        <option>Maybe</option>
+                        <option>Not Sure</option>
+                        <option>No</option>
+                    </select>
+                </div>
 
-<label>On a scale of 0 to 10, how likely are you to recommend our product/service to others?</label>
-<select id="s-nps" required>
-  <option value="">Select</option>
-  <option value="10">10 - Extremely likely</option>
-  <option value="9">9</option>
-  <option value="8">8</option>
-  <option value="7">7</option>
-  <option value="6">6</option>
-  <option value="5">5</option>
-  <option value="4">4</option>
-  <option value="3">3</option>
-  <option value="2">2</option>
-  <option value="1">1</option>
-  <option value="0">0 - Not at all likely</option>
-</select>
+                <div class="form-group">
+                    <label for="s-nps"
+                      >How likely are you to recommend our product/service?
+                    </label
+                    >
+                    <select id="s-nps" required>
+                      <option value="">Select score</option>
+                      <option value="10">10 - Extremely likely</option>
+                      <option value="9">9</option>
+                      <option value="8">8</option>
+                      <option value="7">7</option>
+                      <option value="6">6</option>
+                      <option value="5">5</option>
+                      <option value="4">4</option>
+                      <option value="3">3</option>
+                      <option value="2">2</option>
+                      <option value="1">1</option>
+                      <option value="0">0 - Not at all likely</option>
+                    </select>
+                </div>
 
+                <div class="form-group">
+                    <label for="s-feedback">Additional Feedback</label>
+                    <textarea id="s-feedback" rows="4" placeholder="Enter your feedback"></textarea>
+                </div>
 
-    <label>Additional Feedback</label>
-    <textarea id="s-feedback" rows="4"></textarea>
+                <button type="submit">Submit Feedback</button>
+            </form>
+        </div>
 
-    <button type="submit">Submit Survey</button>
-  </form>
-</div>
+        <!-- Complaint Form -->
+        <div class="form-box" id="complaintBox" style="display: none">
+            <div class="top-bar">
+                <h2>Submit a Complaint</h2>
+                <a href="#" id="goToSurvey">Back to Survey</a>
+            </div>
+            <form id="complaintForm">
+                <div class="form-group">
+                    <label for="c-name">Full Name</label>
+                    <input type="text" id="c-name" required placeholder="Enter your name">
+                </div>
 
-<!-- Complaint Form -->
-<div class="form-box" id="complaintBox" style="display: none;">
-  <div class="top-bar">
-    <h2>Raise a Complaint / Query</h2>
-    <a href="#" id="goToSurvey">Back to Survey</a>
-  </div>
-  <form id="complaintForm">
-    <label>Name</label>
-    <input type="text" id="c-name" required />
+                <div class="form-group">
+                    <label for="c-email">Email Address</label>
+                    <input type="email" id="c-email" required placeholder="Enter your email">
+                </div>
 
-    <label>Email</label>
-    <input type="email" id="c-email" required />
+                <div class="form-group">
+                    <label for="c-type">Complaint Type</label>
+                    <select id="c-type" required>
+                        <option value="">Select type</option>
+                        <option>Service Delay</option>
+                        <option>Product Issue</option>
+                        <option>Staff Behavior</option>
+                        <option>Other</option>
+                    </select>
+                </div>
 
-    <label>Complaint Type</label>
-    <select id="c-type" required>
-      <option value="">Select</option>
-      <option>Service Delay</option>
-      <option>Product Issue</option>
-      <option>Staff Behavior</option>
-      <option>Other</option>
-    </select>
+                <div class="form-group">
+                    <label for="c-msg">Message</label>
+                    <textarea id="c-msg" rows="5" required placeholder="Describe your complaint"></textarea>
+                </div>
 
-    <label>Message</label>
-    <textarea id="c-msg" rows="5" required></textarea>
+                <button type="submit">Submit Complaint</button>
+            </form>
+        </div>
 
-    <button type="submit">Submit Complaint</button>
-  </form>
-</div>
+        <!-- General Query Form -->
+        <div class="form-box" id="queryBox" style="display: none">
+            <div class="top-bar">
+                <h2>Submit a Query</h2>
+                <a href="#" onclick="showForm('selector')">Back</a>
+            </div>
+            <form id="queryForm">
+                <div class="form-group">
+                    <label for="q-name">Full Name</label>
+                    <input type="text" id="q-name" required placeholder="Enter your name">
+                </div>
 
-<!-- Thank You Screen -->
-<div class="thank-you" id="thankYouBox">
-  <div class="emoji">🙏</div>
-  <h2>Thank you for your time!</h2>
-  <p>Your response has been recorded.</p>
-  <p id="ticketInfo" style="font-weight: bold;"></p>
-</div>
+                <div class="form-group">
+                    <label for="q-email">Email Address</label>
+                    <input type="email" id="q-email" required placeholder="Enter your email">
+                </div>
 
-<script>
-  // Firebase Setup
-  const firebaseConfig = {
-    apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
-    authDomain: "smart-customer-support-portal.firebaseapp.com",
-    projectId: "smart-customer-support-portal",
-    storageBucket: "smart-customer-support-portal.firebasestorage.app",
-    messagingSenderId: "59178725363",
-    appId: "1:59178725363:web:c9063beed6217833926c86",
-    measurementId: "G-372XHVDCSY"
-  };
+                <div class="form-group">
+                    <label for="q-subject">Subject</label>
+                    <input type="text" id="q-subject" required placeholder="Query subject">
+                </div>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+                <div class="form-group">
+                    <label for="q-msg">Message</label>
+                    <textarea id="q-msg" rows="5" required placeholder="Describe your query"></textarea>
+                </div>
 
-  // Toggle between forms
-  document.getElementById("goToComplaint").onclick = (e) => {
-    e.preventDefault();
-    document.getElementById("surveyBox").style.display = "none";
-    document.getElementById("complaintBox").style.display = "block";
-  };
-  document.getElementById("goToSurvey").onclick = (e) => {
-    e.preventDefault();
-    document.getElementById("complaintBox").style.display = "none";
-    document.getElementById("surveyBox").style.display = "block";
-  };
+                <button type="submit">Submit Query</button>
+            </form>
+        </div>
 
-  // Ticket ID Generator
-  function generateTicketId() {
-    return "CMP-" + Math.random().toString(36).substr(2, 6).toUpperCase();
-  }
+        <!-- Thank You Screen -->
+        <div class="thank-you" id="thankYouBox" style="display: none">
+            <div class="emoji">🎉</div>
+            <h2>Thank You!</h2>
+            <p>We appreciate your feedback.</p>
+            <div class="ticket-info" id="ticketInfo"></div>
+        </div>
+    </div>
 
-  // Survey Submit
-  document.getElementById("surveyForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const name = document.getElementById("s-name").value;
-    const email = document.getElementById("s-email").value;
-    const quality = document.getElementById("s-quality").value;
-    const ease = document.getElementById("s-ease").value;
-    const recommend = document.getElementById("s-recommend").value;
-    const npsScore = parseInt(document.getElementById("s-nps").value);
-    const feedback = document.getElementById("s-feedback").value;
+    <script>
+      // Firebase Setup
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
+        authDomain: "smart-customer-support-portal.firebaseapp.com",
+        projectId: "smart-customer-support-portal",
+        storageBucket: "smart-customer-support-portal.firebasestorage.app",
+        messagingSenderId: "59178725363",
+        appId: "1:59178725363:web:c9063beed6217833926c86",
+        measurementId: "G-372XHVDCSY",
+      };
 
-    db.collection("surveys").add({
-      name,
-      email,
-      quality,
-      ease,
-      recommend,
-      npsScore,
-      feedback,
-      createdAt: new Date()
-    }).then(() => {
-      document.getElementById("surveyBox").style.display = "none";
-      document.getElementById("ticketInfo").innerText = ""; // No ticket for survey
-      document.getElementById("thankYouBox").style.display = "block";
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      // Show form based on selection
+      function showForm(type) {
+        // Hide all forms
+        document.getElementById('typeSelector').style.display = 'none';
+        document.getElementById('surveyBox').style.display = 'none';
+        document.getElementById('complaintBox').style.display = 'none';
+        document.getElementById('queryBox').style.display = 'none';
+        document.getElementById('thankYouBox').style.display = 'none';
+
+        // Show selected form
+        switch(type) {
+            case 'feedback':
+                document.getElementById('surveyBox').style.display = 'block';
+                break;
+            case 'complaint':
+                document.getElementById('complaintBox').style.display = 'block';
+                break;
+            case 'query':
+                document.getElementById('queryBox').style.display = 'block';
+                break;
+            default:
+                document.getElementById('typeSelector').style.display = 'block';
+        }
+    }
+
+      // Toggle between forms
+      document.getElementById("goToComplaint").onclick = (e) => {
+        e.preventDefault();
+        document.getElementById("surveyBox").style.display = "none";
+        document.getElementById("complaintBox").style.display = "block";
+      };
+      document.getElementById("goToSurvey").onclick = (e) => {
+        e.preventDefault();
+        document.getElementById("complaintBox").style.display = "none";
+        document.getElementById("surveyBox").style.display = "block";
+      };
+
+      // Ticket ID Generator
+      function generateTicketId(prefix = 'CMP') {
+        return `${prefix}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      }
+
+      // Survey Submit
+      document
+        .getElementById("surveyForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const name = document.getElementById("s-name").value;
+          const email = document.getElementById("s-email").value;
+          const quality = document.getElementById("s-quality").value;
+          const ease = document.getElementById("s-ease").value;
+          const recommend = document.getElementById("s-recommend").value;
+          const npsScore = parseInt(document.getElementById("s-nps").value);
+          const feedback = document.getElementById("s-feedback").value;
+
+          const data = {
+            name,
+            email,
+            quality,
+            ease,
+            recommend,
+            npsScore,
+            feedback,
+            type: 'Feedback',
+            createdAt: new Date()
+        };
+        
+        db.collection('feedback').add(data)
+            .then(() => {
+                document.getElementById('surveyBox').style.display = 'none';
+                document.getElementById('thankYouBox').style.display = 'block';
+            });
+        });
+
+      // Complaint Submit
+      document
+        .getElementById("complaintForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const name = document.getElementById("c-name").value;
+          const email = document.getElementById("c-email").value;
+          const type = document.getElementById("c-type").value;
+          const message = document.getElementById("c-msg").value;
+          const ticketId = generateTicketId();
+
+          // Save to Firestore
+          db.collection("complaints").add({
+            name,
+            email,
+            type,
+            message,
+            ticketId,
+            status: "Open",
+            createdAt: new Date(),
+          });
+
+          // Send email via EmailJS
+          // Send email via EmailJS to the customer
+          emailjs.send("service_7y35doh", "template_wd9zc0z", {
+            to_name: name,
+            to_email: email,
+            message: message,
+            ticket_id: ticketId,
+          });
+
+          // Show thank you screen
+          document.getElementById("complaintBox").style.display = "none";
+          document.getElementById(
+            "ticketInfo"
+          ).innerText = `Your Ticket ID is: ${ticketId}`;
+          document.getElementById("thankYouBox").style.display = "block";
+        });
+
+      // Add Query Form Handler
+      document.getElementById('queryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('q-name').value;
+        const email = document.getElementById('q-email').value;
+        const subject = document.getElementById('q-subject').value;
+        const message = document.getElementById('q-msg').value;
+        const ticketId = generateTicketId('QRY');
+
+        db.collection('queries').add({
+            name,
+            email,
+            subject,
+            message,
+            ticketId,
+            status: 'Open',
+            type: 'Query',
+            createdAt: new Date()
+        }).then(() => {
+            // Send email
+            emailjs.send('service_7y35doh', 'template_wd9zc0z', {
+                to_name: name,
+                to_email: email,
+                message: message,
+                ticket_id: ticketId
+            });
+
+            // Show thank you
+            document.getElementById('queryBox').style.display = 'none';
+            document.getElementById('ticketInfo').innerText = `Your Query ID is: ${ticketId}`;
+            document.getElementById('thankYouBox').style.display = 'block';
+        });
     });
-  });
-
-  // Complaint Submit
-  document.getElementById("complaintForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const name = document.getElementById("c-name").value;
-    const email = document.getElementById("c-email").value;
-    const type = document.getElementById("c-type").value;
-    const message = document.getElementById("c-msg").value;
-    const ticketId = generateTicketId();
-
-    // Save to Firestore
-    db.collection("complaints").add({
-      name,
-      email,
-      type,
-      message,
-      ticketId,
-      status: "Open",
-      createdAt: new Date()
-    });
-
-    // Send email via EmailJS
-    emailjs.send("service_7y35doh", "template_ypnghxy", {
-      to_name: name,
-      to_email: email,
-      message: message,
-      ticket_id: ticketId
-    });
-
-    // Show thank you screen
-    document.getElementById("complaintBox").style.display = "none";
-    document.getElementById("ticketInfo").innerText = `Your Ticket ID is: ${ticketId}`;
-    document.getElementById("thankYouBox").style.display = "block";
-  });
-</script>
-
-</body>
+    </script>
+  </body>
 </html>
