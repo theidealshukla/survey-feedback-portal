@@ -71,12 +71,19 @@
           Export to CSV
         </button>
       </div>
+
+      <!-- Delete Controls -->
+      <div class="delete-controls">
+        <button onclick="deleteSelected()" class="delete-btn">Delete Selected</button>
+        <button onclick="deleteAll()" class="delete-btn delete-all">Delete All</button>
+      </div>
     </div>
 
     <div class="table-container">
       <table>
         <thead>
           <tr>
+            <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
             <th>Name</th>
             <th>Email</th>
             <th>Type</th>
@@ -100,7 +107,6 @@
     </div>
 
     <script src="admin.js"></script>
-     
-    </script>
+    <script src="delete-operations.js"></script>
   </body>
 </html>
