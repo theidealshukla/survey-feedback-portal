@@ -1,33 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-   <link rel="stylesheet" href="login.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-
-  
+    <meta charset="UTF-8" />
+    <title>Admin Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="login.css" />
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-
- <div class="login-container">
-    <!-- Company Logo -->
-    <img class="company-logo" src="A1.png" alt="Company Logo">
-
-
-    <h2>Admin Login</h2>
-    
-    <button id="googleSignIn" class="google-signin-btn">
-      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" />
-      Sign in with Google
-    </button>
-
-    <div class="powered-by">
-      Secure admin access powered by Google Authentication
+    <div class="container">
+        <div class="login-card">
+            <div class="brand">
+                <img class="company-logo" src="A1.png" alt="Company Logo">
+                
+            </div>
+            
+            <div class="welcome-text">
+                <h2>Welcome Back</h2>
+                <p>Please sign in to access your admin dashboard</p>
+            </div>
+            
+            <button id="googleSignIn" class="google-signin-btn">
+                <div class="button-content">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" />
+                    <span>Continue with Google</span>
+                </div>
+                <div class="loading-spinner" style="display: none;">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                </div>
+            </button>
+            
+            <div class="security-badge">
+                <i class="fas fa-shield-alt"></i>
+                <p>Secure admin access powered by Google Authentication</p>
+            </div>
+        </div>
     </div>
-  </div>
 
 <script >
   // ✅ List of allowed admin emails
@@ -46,12 +56,27 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 // ✅ Sign in with Google
-document.getElementById("googleSignIn").addEventListener("click", () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider)
-    .catch(error => {
-      alert("Login failed: " + error.message);
-    });
+document.getElementById("googleSignIn").addEventListener("click", async () => {
+    const button = document.getElementById("googleSignIn");
+    const buttonContent = button.querySelector(".button-content");
+    const loadingSpinner = button.querySelector(".loading-spinner");
+    
+    try {
+        // Show loading state
+        buttonContent.style.display = "none";
+        loadingSpinner.style.display = "block";
+        button.disabled = true;
+        
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithPopup(provider);
+    } catch (error) {
+        alert("Login failed: " + error.message);
+        
+        // Reset button state
+        buttonContent.style.display = "flex";
+        loadingSpinner.style.display = "none";
+        button.disabled = false;
+    }
 });
 
 // ✅ Auth state + admin check
