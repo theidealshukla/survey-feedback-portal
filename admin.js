@@ -1,3 +1,4 @@
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
   authDomain: "smart-customer-support-portal.firebaseapp.com",
@@ -7,16 +8,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 firebase.auth().onAuthStateChanged((user) => {
-  if (!user) window.location.href = "index.html"; // Changed from login.html
+  if (!user) window.location.href = "index.html";
 });
 
 function logout() {
-  firebase
-    .auth()
-    .signOut()
-    .then(() => (location.href = "index.html")); // Changed from login.html
+  firebase.auth().signOut().then(() => (location.href = "index.html"));
 }
 
+// --- Modal, RCA, CAPA handling ---
 function closeModal() {
   const modal = document.getElementById("viewModal");
   modal.classList.remove("show");
@@ -30,117 +29,66 @@ async function showModal(docId, isComplaint, details, currentStatus) {
   if (!isComplaint) {
     const surveyDoc = await db.collection("surveys").doc(docId).get();
     const surveyData = surveyDoc.data();
-
-    // Log the survey data to debug
-    console.log("Survey Data:", surveyData);
-
     const submissionDate = surveyData.createdAt?.toDate().toLocaleString();
 
     modalDetails.innerHTML = `
-          <div class="survey-details">
-            <!-- Basic Customer Info -->
-            <div class="section-title">Customer Information</div>
-            <div class="detail-row">
-              <label>Name:</label>
-              <span>${surveyData.name || "N/A"}</span>
-            </div>
-            <div class="detail-row">
-              <label>Email:</label>
-              <span>${surveyData.email || "N/A"}</span>
-            </div>
-            <div class="detail-row">
-              <label>Submission Date:</label>
-              <span>${submissionDate || "N/A"}</span>
-            </div>
-
-            <!-- Survey Responses -->
-            <div class="section-title">Survey Responses</div>
-            <div class="detail-row">
-              <label>How likely are you to recommend us?</label>
-              <span>${surveyData.recommend || "N/A"}/10</span>
-            </div>
-            <div class="detail-row">
-              <label>How would you rate our ease of use?</label>
-              <span>${surveyData.ease || "N/A"}/5</span>
-            </div>
-            <div class="detail-row">
-              <label>How would you rate our service quality?</label>
-              <span>${surveyData.quality || "N/A"}/5</span>
-            </div>
-            <div class="detail-row">
-              <label>Additional Feedback:</label>
-              <p class="feedback-text">${
-                surveyData.feedback || "No feedback provided"
-              }</p>
-            </div>
-          </div>
-        `;
-
+      <div class="survey-details">
+        <div class="section-title">Customer Information</div>
+        <div class="detail-row"><label>Name:</label><span>${surveyData.name || "N/A"}</span></div>
+        <div class="detail-row"><label>Email:</label><span>${surveyData.email || "N/A"}</span></div>
+        <div class="detail-row"><label>Submission Date:</label><span>${submissionDate || "N/A"}</span></div>
+        <div class="section-title">Survey Responses</div>
+        <div class="detail-row"><label>How likely are you to recommend us?</label><span>${surveyData.recommend || "N/A"}/10</span></div>
+        <div class="detail-row"><label>How would you rate our ease of use?</label><span>${surveyData.ease || "N/A"}/5</span></div>
+        <div class="detail-row"><label>How would you rate our service quality?</label><span>${surveyData.quality || "N/A"}/5</span></div>
+        <div class="detail-row"><label>Additional Feedback:</label><p class="feedback-text">${surveyData.feedback || "No feedback provided"}</p></div>
+      </div>
+    `;
     statusUpdate.innerHTML = "";
   } else {
     modalDetails.innerHTML = details;
-
     if (isComplaint) {
       const complaintDoc = await db.collection("complaints").doc(docId).get();
       const complaintData = complaintDoc.data();
-
-      // Check if complaint is already resolved
       const isResolved = complaintData.status === "resolved";
-
       statusUpdate.innerHTML = `
-            <div class="analysis-section">
-              <h4>Root Cause Analysis</h4>
-              <textarea id="rcaInput" placeholder="Enter root cause analysis..." rows="3" 
-                ${isResolved ? "disabled" : ""} 
-                class="${isResolved ? "textarea-disabled" : ""}">${
-        complaintData.rca || ""
-      }</textarea>
-              
-              <h4>Corrective and Preventive Action</h4>
-              <textarea id="capaInput" placeholder="Enter corrective and preventive actions..." rows="3"
-                ${isResolved ? "disabled" : ""} 
-                class="${isResolved ? "textarea-disabled" : ""}">${
-        complaintData.capa || ""
-      }</textarea>
-              
-              ${
-                isResolved
-                  ? ""
-                  : "<button onclick=\"updateComplaint('" +
-                    docId +
-                    '\')" class="update-btn">Update</button>'
-              }
-            </div>
-          `;
+        <div class="analysis-section">
+          <h4>Root Cause Analysis</h4>
+          <textarea id="rcaInput" placeholder="Enter root cause analysis..." rows="3" ${isResolved ? "disabled" : ""} class="${isResolved ? "textarea-disabled" : ""}">${complaintData.rca || ""}</textarea>
+          <h4>Corrective and Preventive Action</h4>
+          <textarea id="capaInput" placeholder="Enter corrective and preventive actions..." rows="3" ${isResolved ? "disabled" : ""} class="${isResolved ? "textarea-disabled" : ""}">${complaintData.capa || ""}</textarea>
+          ${
+            isResolved
+              ? ""
+              : "<button onclick=\"updateComplaint('" +
+                docId +
+                '\')" class="update-btn">Update</button>'
+          }
+        </div>
+      `;
     } else {
       statusUpdate.innerHTML = "";
     }
   }
-
   const modal = document.getElementById("viewModal");
   modal.classList.add("show");
   document.body.classList.add("modal-open");
 }
 
-// Add new function to handle complaint updates
 async function updateComplaint(docId) {
   const rca = document.getElementById("rcaInput").value.trim();
   const capa = document.getElementById("capaInput").value.trim();
-
-  // Validate inputs
   if (!rca || !capa) {
     alert("Please fill both RCA and CAPA sections before updating");
     return;
   }
-
   try {
     await db.collection("complaints").doc(docId).update({
       rca: rca,
       capa: capa,
-      status: "resolved", // Automatically set to resolved
+      status: "resolved",
       resolvedAt: new Date(),
     });
-
     closeModal();
     loadDashboard();
   } catch (error) {
@@ -148,237 +96,42 @@ async function updateComplaint(docId) {
   }
 }
 
-async function updateStatus(id) {
-  const newStatus = document.getElementById("newStatus").value;
-  await db.collection("complaints").doc(id).update({ status: newStatus });
-  closeModal();
-  loadDashboard();
-}
-
-function handleDateFilter() {
-  const dateFilter = document.getElementById("dateFilter").value;
-  const customDateInputs = document.getElementById("customDateInputs");
-  customDateInputs.style.display =
-    dateFilter === "custom" ? "inline-block" : "none";
-  loadDashboard();
-}
-
-function isDateInRange(dateToCheck) {
-  const dateFilter = document.getElementById("dateFilter").value;
-  const today = new Date();
-  const startOfDay = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate()
-  );
-
-  switch (dateFilter) {
-    case "today":
-      return dateToCheck >= startOfDay;
-
-    case "week":
-      const startOfWeek = new Date(startOfDay);
-      startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
-      return dateToCheck >= startOfWeek;
-
-    case "month":
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      return dateToCheck >= startOfMonth;
-
-    case "custom":
-      const startDate = new Date(document.getElementById("startDate").value);
-      const endDate = new Date(document.getElementById("endDate").value);
-      endDate.setHours(23, 59, 59); // Include the entire end date
-      return dateToCheck >= startDate && dateToCheck <= endDate;
-
-    default:
-      return true; // 'all' case
-  }
-}
-
+// --- Sentiment Analysis ---
 function analyzeSentiment(text) {
   const positiveWords = [
-    "good",
-    "great",
-    "excellent",
-    "amazing",
-    "wonderful",
-    "fantastic",
-    "helpful",
-    "best",
-    "happy",
-    "satisfied",
-    "thank",
-    "thanks",
-    "awesome",
-    "love",
-    "perfect",
-    "outstanding",
-    "exceptional",
-    "brilliant",
-    "superb",
-    "delightful",
-    "pleasant",
-    "impressed",
-    "efficient",
-    "fast",
-    "quick",
-    "responsive",
-    "easy",
-    "simple",
-    "user-friendly",
-    "intuitive",
-    "smooth",
-    "reliable",
-    "trustworthy",
-    "valuable",
-    "worth",
-    "recommend",
-    "professional",
-    "clean",
-    "organized",
-    "secure",
-    "safe",
-    "innovative",
-    "improved",
-    "better",
-    "working",
-    "works well",
-    "convenient",
+    "good", "great", "excellent", "amazing", "wonderful", "fantastic", "helpful", "best", "happy", "satisfied", "thank", "thanks", "awesome", "love", "perfect", "outstanding", "exceptional", "brilliant", "superb", "delightful", "pleasant", "impressed", "efficient", "fast", "quick", "responsive", "easy", "simple", "user-friendly", "intuitive", "smooth", "reliable", "trustworthy", "valuable", "worth", "recommend", "professional", "clean", "organized", "secure", "safe", "innovative", "improved", "better", "working", "works well", "convenient",
   ];
-
   const negativeWords = [
-    "bad",
-    "poor",
-    "terrible",
-    "awful",
-    "horrible",
-    "worst",
-    "disgusting",
-    "unacceptable",
-    "unhappy",
-    "unsatisfied",
-    "dissatisfied",
-    "frustrated",
-    "disappointed",
-    "regret",
-    "issue",
-    "problem",
-    "bug",
-    "error",
-    "crash",
-    "fail",
-    "failure",
-    "doesn't work",
-    "does not work",
-    "not working",
-    "not good",
-    "not great",
-    "broken",
-    "glitch",
-    "slow",
-    "laggy",
-    "delayed",
-    "late",
-    "complicated",
-    "confusing",
-    "unclear",
-    "hard",
-    "difficult",
-    "annoying",
-    "painful",
-    "hate",
-    "dislike",
-    "boring",
-    "waste",
-    "expensive",
-    "overpriced",
-    "not worth",
-    "rude",
-    "unhelpful",
-    "ignored",
-    "incomplete",
-    "dirty",
-    "messy",
-    "unsafe",
-    "unreliable",
-    "untrustworthy",
-    "crappy",
-    "junk",
-    "never again",
-    "no support",
-    "can't use",
-    "can't login",
-    "locked out",
-    "inconvenient",
+    "bad", "poor", "terrible", "awful", "horrible", "worst", "disgusting", "unacceptable", "unhappy", "unsatisfied", "dissatisfied", "frustrated", "disappointed", "regret", "issue", "problem", "bug", "error", "crash", "fail", "failure", "doesn't work", "does not work", "not working", "not good", "not great", "broken", "glitch", "slow", "laggy", "delayed", "late", "complicated", "confusing", "unclear", "hard", "difficult", "annoying", "painful", "hate", "dislike", "boring", "waste", "expensive", "overpriced", "not worth", "rude", "unhelpful", "ignored", "incomplete", "dirty", "messy", "unsafe", "unreliable", "untrustworthy", "crappy", "junk", "never again", "no support", "can't use", "can't login", "locked out", "inconvenient",
   ];
-
   text = text.toLowerCase();
   let positiveScore = 0;
   let negativeScore = 0;
-
-  // Count matches
   positiveWords.forEach((word) => {
     const regex = new RegExp("\\b" + word + "\\b", "gi");
     const matches = text.match(regex);
     if (matches) positiveScore += matches.length;
   });
-
   negativeWords.forEach((word) => {
     const regex = new RegExp("\\b" + word + "\\b", "gi");
     const matches = text.match(regex);
     if (matches) negativeScore += matches.length;
   });
-
-  // Add CSS for sentiment badges
   return generateSentimentBadge(positiveScore, negativeScore);
 }
 
 function generateSentimentBadge(positiveScore, negativeScore) {
   const diff = positiveScore - negativeScore;
-
   if (diff > 0) {
     return `<span class="badge badge-positive">Positive (${positiveScore})</span>`;
   } else if (diff < 0) {
-    return `<span class="badge badge-negative">Negative (${Math.abs(
-      negativeScore
-    )})</span>`;
-  } else {
-    return `<span class="badge badge-neutral">Neutral</span>`;
-  }
-}
-
-function analyzeSurveyData(surveyData) {
-  let sentimentScore = 0;
-
-  // Analyze recommendation score
-  const recommendText = String(surveyData.recommend).toLowerCase();
-  if (recommendText.includes("definitely")) sentimentScore += 2;
-
-  // Analyze ease of use
-  const easeText = String(surveyData.ease).toLowerCase();
-  if (easeText.includes("very easy")) sentimentScore += 1;
-
-  // Analyze quality
-  const qualityText = String(surveyData.quality).toLowerCase();
-  if (qualityText.includes("excellent")) sentimentScore += 1;
-
-  // Analyze text feedback
-  const feedback = surveyData.feedback?.toLowerCase() || "";
-  if (feedback.includes("nice")) sentimentScore += 1;
-
-  // Generate final sentiment badge with more detailed scoring
-  if (sentimentScore > 0) {
-    return `<span class="badge badge-positive">Positive (+${sentimentScore})</span>`;
-  } else if (sentimentScore < 0) {
-    return `<span class="badge badge-negative">Negative (${sentimentScore})</span>`;
+    return `<span class="badge badge-negative">Negative (${Math.abs(negativeScore)})</span>`;
   } else {
     return `<span class="badge badge-neutral">Neutral</span>`;
   }
 }
 
 function analyzeSurveySentiment(surveyData) {
-  // Combine all dropdown answers and feedback
   const answers = [
     surveyData.quality,
     surveyData.ease,
@@ -388,7 +141,6 @@ function analyzeSurveySentiment(surveyData) {
   ]
     .map((a) => (a || "").toString().toLowerCase())
     .join(" ");
-
   return analyzeSentiment(answers);
 }
 
@@ -397,36 +149,33 @@ function analyzeComplaintSentiment(complaintData) {
   return analyzeSentiment(message);
 }
 
-let gaugeChart = null;
-
-function updateNPSGauge(score) {
-  // Ensure score is between -100 and 100
-  score = Math.max(-100, Math.min(100, score));
-
-  // Update the display value with color based on score
-  const npsElement = document.getElementById("avgNPS");
-  npsElement.innerText = score + "%";
-
-  // Set color based on score ranges
-  if (score >= 80) {
-    npsElement.style.color = "#4caf50"; // green
-  } else if (score >= 50) {
-    npsElement.style.color = "#ffc107"; // yellow
-  } else {
-    npsElement.style.color = "#dc3545"; // red
+// --- Dashboard Loading ---
+function isDateInRange(dateToCheck) {
+  const dateFilter = document.getElementById("dateFilter").value;
+  const today = new Date();
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  switch (dateFilter) {
+    case "today":
+      return dateToCheck >= startOfDay;
+    case "week":
+      const startOfWeek = new Date(startOfDay);
+      startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+      return dateToCheck >= startOfWeek;
+    case "month":
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return dateToCheck >= startOfMonth;
+    case "custom":
+      const startDate = new Date(document.getElementById("startDate").value);
+      const endDate = new Date(document.getElementById("endDate").value);
+      endDate.setHours(23, 59, 59);
+      return dateToCheck >= startDate && dateToCheck <= endDate;
+    default:
+      return true;
   }
 }
 
 async function loadDashboard() {
-  console.log("Starting dashboard data load...");
-
-  let total = 0,
-    open = 0,
-    resolvedToday = 0;
-  let promoters = 0,
-    passives = 0,
-    detractors = 0,
-    totalResponses = 0;
+  let total = 0, open = 0, resolvedToday = 0;
   const today = new Date().toISOString().split("T")[0];
   const typeFilter = document.getElementById("filterType").value;
   const statusFilter = document.getElementById("filterStatus").value;
@@ -435,71 +184,26 @@ async function loadDashboard() {
   const endDate = document.getElementById("endDate").value;
   document.getElementById("dataTable").innerHTML = "";
 
-  // Log complaints data
   const complaints = await db.collection("complaints").get();
-  console.log(`Found ${complaints.size} complaints in database`);
-
-  complaints.forEach((doc) => {
-    const data = doc.data();
-    console.log("Complaint data:", {
-      id: doc.id,
-      name: data.name,
-      email: data.email,
-      status: data.status,
-      message: data.message,
-      createdAt: data.createdAt?.toDate(),
-      rca: data.rca,
-      capa: data.capa,
-    });
-  });
-
-  // Log surveys data
   const surveys = await db.collection("surveys").get();
-  console.log(`Found ${surveys.size} surveys in database`);
-
-  surveys.forEach((doc) => {
-    const data = doc.data();
-    console.log("Survey data:", {
-      id: doc.id,
-      name: data.name,
-      email: data.email,
-      npsScore: data.npsScore,
-      feedback: data.feedback,
-      wouldRecommend: data.wouldRecommend,
-      serviceRating: data.serviceRating,
-      createdAt: data.createdAt?.toDate(),
-    });
-  });
 
   complaints.forEach((doc) => {
     const data = doc.data();
     const createdDate = data.createdAt?.toDate();
-
-    // Only process if date is in selected range
     if (createdDate && isDateInRange(createdDate)) {
       total++;
-
-      // Add console log to debug status
-      console.log("Complaint status:", data.status);
-
-      // Check if status exists and is "open"
-      if (data.status && data.status.toLowerCase() === "open") {
-        open++;
-      }
+      if (data.status && data.status.toLowerCase() === "open") open++;
       if (
         data.status === "resolved" &&
         data.createdAt?.toDate().toISOString().startsWith(today)
       )
         resolvedToday++;
-
       if (
         (typeFilter === "complaint" || typeFilter === "all") &&
         (statusFilter === data.status || statusFilter === "all")
       ) {
-        // Filter by date ranges
         const createdAt = data.createdAt?.toDate().toISOString().split("T")[0];
         let dateCondition = true;
-
         if (dateFilter === "today") {
           dateCondition = createdAt === today;
         } else if (dateFilter === "week") {
@@ -513,37 +217,24 @@ async function loadDashboard() {
         } else if (dateFilter === "custom") {
           dateCondition = createdAt >= startDate && createdAt <= endDate;
         }
-
         if (dateCondition) {
           const details = `
-                <p><strong>Name:</strong> ${data.name}</p>
-                <p><strong>Email:</strong> ${data.email}</p>
-                <p><strong>Status:</strong> ${data.status}</p>
-                <p><strong>Date:</strong> ${data.createdAt
-                  ?.toDate()
-                  .toLocaleDateString()}</p>
-                <p><strong>Message:</strong> ${data.message}</p>`;
-
-          // For complaints
+            <p><strong>Name:</strong> ${data.name}</p>
+            <p><strong>Email:</strong> ${data.email}</p>
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Date:</strong> ${data.createdAt?.toDate().toLocaleDateString()}</p>
+            <p><strong>Message:</strong> ${data.message}</p>`;
           const sentiment = analyzeComplaintSentiment(data);
           document.getElementById("dataTable").innerHTML += `
-                <tr>
-                  <td>${data.name}</td>
-                  <td>${data.email}</td>
-                  <td>Complaint</td>
-                  <td><span class="badge ${
-                    data.status.toLowerCase() === "open"
-                      ? "badge-yellow"
-                      : "badge-green"
-                  }">${data.status}</span></td>
-                  <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-                  <td>${sentiment}</td>
-                  <td><button class="btn" onclick='showModal("${
-                    doc.id
-                  }", true, ${JSON.stringify(details)}, "${
-            data.status
-          }")'>View</button></td>
-                </tr>`;
+            <tr>
+              <td>${data.name}</td>
+              <td>${data.email}</td>
+              <td>Complaint</td>
+              <td><span class="badge ${data.status.toLowerCase() === "open" ? "badge-yellow" : "badge-green"}">${data.status}</span></td>
+              <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
+              <td>${sentiment}</td>
+              <td><button class="btn" onclick='showModal("${doc.id}", true, ${JSON.stringify(details)}, "${data.status}")'>View</button></td>
+            </tr>`;
         }
       }
     }
@@ -552,114 +243,122 @@ async function loadDashboard() {
   surveys.forEach((doc) => {
     const data = doc.data();
     const createdDate = data.createdAt?.toDate();
-
-    // Only process if date is in selected range
     if (createdDate && isDateInRange(createdDate)) {
       total++;
-
-      // Sentiment analysis for survey
-      const sentiment = analyzeSurveySentiment(data);
-      if (sentiment.includes("Positive")) promoters++;
-      else if (sentiment.includes("Negative")) detractors++;
-      else passives++;
-      totalResponses++;
-
-      // Add this section to display survey data in table
-      if (typeFilter === "survey" || typeFilter === "all") {
+      if (
+        typeFilter === "survey" ||
+        typeFilter === "all"
+      ) {
         const details = `
-              <p><strong>Name:</strong> ${data.name}</p>
-              <p><strong>Email:</strong> ${data.email}</p>
-              <p><strong>Date:</strong> ${data.createdAt
-                ?.toDate()
-                .toLocaleDateString()}</p>
-              <p><strong>NPS Score:</strong> ${data.npsScore || "N/A"}</p>
-              <p><strong>Feedback:</strong> ${data.feedback || "N/A"}</p>`;
-
-        // For surveys
+          <p><strong>Name:</strong> ${data.name}</p>
+          <p><strong>Email:</strong> ${data.email}</p>
+          <p><strong>Date:</strong> ${data.createdAt?.toDate().toLocaleDateString()}</p>
+          <p><strong>NPS Score:</strong> ${data.npsScore || "N/A"}</p>
+          <p><strong>Feedback:</strong> ${data.feedback || "N/A"}</p>`;
+        const sentiment = analyzeSurveySentiment(data);
         document.getElementById("dataTable").innerHTML += `
-              <tr>
-                <td>${data.name}</td>
-                <td>${data.email}</td>
-                <td>Survey</td>
-                <td><span class="badge badge-blue">N/A</span></td>
-                <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-                <td>${sentiment}</td>
-                <td><button class="btn" onclick='showModal("${
-                  doc.id
-                }", false, ${JSON.stringify(details)})'>View</button></td>
-              </tr>`;
+          <tr>
+            <td>${data.name}</td>
+            <td>${data.email}</td>
+            <td>Survey</td>
+            <td><span class="badge badge-blue">N/A</span></td>
+            <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
+            <td>${sentiment}</td>
+            <td><button class="btn" onclick='showModal("${
+              doc.id
+            }", false, ${JSON.stringify(details)})'>View</button></td>
+          </tr>`;
       }
     }
   });
 
-  // Update dashboard metrics
   document.getElementById("totalSubmissions").innerText = total;
   document.getElementById("openTickets").innerText = open;
   document.getElementById("resolvedToday").innerText = resolvedToday;
-  document.getElementById("avgNPS").innerText = totalResponses
-    ? (((promoters - detractors) / totalResponses) * 100).toFixed(2) + "%"
-    : "-";
 
-  // Update NPS gauge
-  const npsScore = totalResponses
-    ? ((promoters - detractors) / totalResponses) * 100
-    : 0;
-  updateNPSGauge(Number(npsScore.toFixed(0)));
+  await fetchAIComplaintSummary();
 }
 
-function exportToCSV() {
-  // Get table data
-  const table = document.getElementById("dataTable");
-  const rows = table.getElementsByTagName("tr");
+// --- AI Complaint Summary (Claude/Gemini/OpenRouter) ---
+const OPENROUTER_API_KEY = "Bearer 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";
 
-  let csvContent = "Name,Email,Type,Status,Date\n"; // CSV header
-
-  // Convert table rows to CSV
-  for (let i = 0; i < rows.length; i++) {
-    const cells = rows[i].getElementsByTagName("td");
-    let rowData = [];
-
-    // Get text content from each cell (excluding the View button)
-    for (let j = 0; j < cells.length - 1; j++) {
-      // For status column, get text without the badge styling
-      if (j === 3) {
-        rowData.push(cells[j].textContent.trim());
-      } else {
-        rowData.push(cells[j].textContent);
-      }
+async function fetchAIComplaintSummary() {
+  const summaryElement = document.getElementById('aiIssueSummary');
+  if (!summaryElement) return;
+  try {
+    const snapshot = await db.collection('complaints')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+    const messages = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.message) messages.push(`Type: ${data.type || "N/A"} | Message: ${data.message}`);
+    });
+    if (messages.length === 0) {
+      summaryElement.innerHTML = '<p>No complaints to analyze</p>';
+      return;
     }
+    const fullPrompt = `
+You are an AI that analyzes customer complaints.
 
-    csvContent += rowData.join(",") + "\n";
+Each complaint includes:
+- A type (e.g. Product, Service, Staff, Delivery, Pricing)
+- A message
+
+Instructions:
+1. Review all the complaints.
+2. Identify recurring problems grouped by themes like "Poor Support", "Product Defects", etc.
+3. Output a concise list of 3-5 common issues (max 3 words each). No explanation.
+
+Format:
+- Poor Support
+- Product Defect
+- Pricing Confusion
+
+Analyze these ${messages.length} complaints and give a summary of top 5 recurring issues.
+
+Complaints:
+${messages.join("\n")}`;
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": OPENROUTER_API_KEY,
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3-haiku",
+        messages: [{
+          role: "user",
+          content: fullPrompt,
+        }],
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    const result = await response.json();
+    const aiSummary = result?.choices?.[0]?.message?.content || "AI summary not available.";
+    summaryElement.innerHTML = aiSummary.replace(/\n/g, '<br>');
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    summaryElement.innerHTML = `
+      <div class="error-message">
+        <i class="fas fa-exclamation-circle"></i>
+        Error generating summary: ${error.message}
+        <button onclick="fetchAIComplaintSummary()" class="retry-btn">
+          <i class="fas fa-redo"></i> Retry
+        </button>
+      </div>`;
   }
-
-  // Create and trigger download
-  const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute(
-    "download",
-    `dashboard_export_${new Date().toISOString().split("T")[0]}.csv`
-  );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
 
-// Close modal when clicking outside
+// --- Modal close handlers ---
 document.getElementById("viewModal").addEventListener("click", function (e) {
-  if (e.target === this) {
-    closeModal();
-  }
+  if (e.target === this) closeModal();
 });
-
-// Close modal on ESC key
 document.addEventListener("keydown", function (e) {
-  if (
-    e.key === "Escape" &&
-    document.getElementById("viewModal").classList.contains("show")
-  ) {
+  if (e.key === "Escape" && document.getElementById("viewModal").classList.contains("show")) {
     closeModal();
   }
 });
-
-loadDashboard();
