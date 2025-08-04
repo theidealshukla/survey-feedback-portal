@@ -18,7 +18,9 @@ function logout() {
 }
 
 function closeModal() {
-  document.getElementById("viewModal").style.display = "none";
+  const modal = document.getElementById("viewModal");
+  modal.classList.remove("show");
+  document.body.classList.remove("modal-open");
 }
 
 async function showModal(docId, isComplaint, details, currentStatus) {
@@ -115,7 +117,9 @@ async function showModal(docId, isComplaint, details, currentStatus) {
     }
   }
 
-  document.getElementById("viewModal").style.display = "flex";
+  const modal = document.getElementById("viewModal");
+  modal.classList.add("show");
+  document.body.classList.add("modal-open");
 }
 
 // Add new function to handle complaint updates
@@ -640,5 +644,22 @@ function exportToCSV() {
   link.click();
   document.body.removeChild(link);
 }
+
+// Close modal when clicking outside
+document.getElementById("viewModal").addEventListener("click", function (e) {
+  if (e.target === this) {
+    closeModal();
+  }
+});
+
+// Close modal on ESC key
+document.addEventListener("keydown", function (e) {
+  if (
+    e.key === "Escape" &&
+    document.getElementById("viewModal").classList.contains("show")
+  ) {
+    closeModal();
+  }
+});
 
 loadDashboard();
