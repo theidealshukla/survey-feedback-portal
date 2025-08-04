@@ -801,3 +801,148 @@ document.addEventListener("keydown", function (e) {
 });
 
 loadDashboard();
+
+const OPENROUTER_API_KEY = "Bearer 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"; // 🛡️ Replace with your actual key
+
+async function fetchAIComplaintSummary() {
+  const aiSummaryElement = document.getElementById("aiIssueSummary");
+  const refreshButton = document.getElementById("refreshAI");
+
+  try {
+    // Disable refresh button and show loading state
+    if (refreshButton) refreshButton.disabled = true;
+    aiSummaryElement.innerHTML = '<div class="loading-spinner"></div> Analyzing complaints...';
+
+    const snapshot = await db.collection("complaints").get();
+    const messages = [];
+    
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.message) {
+        messages.push(data.message);
+      }
+    });
+
+    // Check if there are any complaints to analyze
+    if (messages.length === 0) {
+      aiSummaryElement.innerHTML = '<div class="alert alert-info">No complaints found to analyze.</div>';
+      return;
+    }
+
+    const fullPrompt = `
+      You're an AI trained to analyze customer complaints and identify major themes.
+      Categories include:
+      - Staff Behavior
+      - Pricing Issues
+      - Delivery Delays
+      - Product Quality
+      - Technical Bugs
+      - Account/Login Problems
+      - Poor Support
+      - Other
+
+      Analyze these ${messages.length} complaints and provide:
+      1. Top 3-5 most common issues
+      2. Count of complaints per issue
+      3. Brief description of each issue
+      4. Any notable patterns or trends
+
+      Format the response in a clear, bulleted structure.
+
+      Complaints:
+      ${messages.join("\n")}
+    `;
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": OPENROUTER_API_KEY,
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3-haiku",
+        messages: [{ role: "user", content: fullPrompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const aiSummary = result?.choices?.[0]?.message?.content;
+
+    if (!aiSummary) {
+      throw new Error("No analysis results received");
+    }
+
+    // Format and display the results
+    aiSummaryElement.innerHTML = `
+      <div class="ai-analysis">
+        <pre class="analysis-content">${aiSummary}</pre>
+        <div class="analysis-meta">
+          <small>Analysis completed at ${new Date().toLocaleString()}</small>
+        </div>
+      </div>
+    `;
+
+  } catch (error) {
+    console.error("AI Analysis Error:", error);
+    aiSummaryElement.innerHTML = `
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        Error analyzing complaints: ${error.message}
+        <button onclick="fetchAIComplaintSummary()" class="btn btn-sm btn-outline-danger mt-2">
+          Retry Analysis
+        </button>
+      </div>
+    `;
+  } finally {
+    if (refreshButton) refreshButton.disabled = false;
+  }
+}
+function exportToCSV() {
+    const table = document.getElementById("dataTable");
+    const rows = table.querySelectorAll("tr");
+    let csvContent = "data:text/csv;charset=utf-8,";
+
+    // Add Header Row
+    const headers = ["Name", "Email", "Type", "Status", "Date", "Sentiment"];
+    csvContent += headers.join(",") + "\r\n";
+
+    // Add Data Rows
+    rows.forEach(row => {
+        const cells = row.querySelectorAll("td");
+        // Ensure it's a valid data row by checking cell count
+        if (cells.length === headers.length + 1) { // +1 for the action button column
+            const rowData = [];
+            // Iterate through cells that correspond to headers
+            for (let i = 0; i < headers.length; i++) {
+                // Clean the text content
+                const cellText = cells[i].textContent.trim().replace(/"/g, '""');
+                rowData.push(`"${cellText}"`);
+            }
+            csvContent += rowData.join(",") + "\r\n";
+        }
+    });
+
+    // Create and trigger download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const today = new Date().toISOString().split('T')[0];
+    link.setAttribute("download", `dashboard_export_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Add the refresh function
+function refreshAIAnalysis() {
+  fetchAIComplaintSummary();
+}
+
+// Call this after loadDashboard()
+loadDashboard().then(() => {
+  fetchAIComplaintSummary();
+});
