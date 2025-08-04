@@ -4,17 +4,20 @@
     <meta charset="UTF-8" />
     <title>Admin Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="login.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <div class="login-card">
             <div class="brand">
                 <img class="company-logo" src="A1.png" alt="Company Logo">
-                
             </div>
             
             <div class="welcome-text">
@@ -39,53 +42,7 @@
         </div>
     </div>
 
-<script >
-  // ✅ List of allowed admin emails
-const allowedAdmins = [
-  "adarshshuklawork@gmail.com",
-  "someone@yourteam.com"
-];
-
-// ✅ Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
-  authDomain: "smart-customer-support-portal.firebaseapp.com",
-  projectId: "smart-customer-support-portal"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-// ✅ Sign in with Google
-document.getElementById("googleSignIn").addEventListener("click", async () => {
-    const button = document.getElementById("googleSignIn");
-    const buttonContent = button.querySelector(".button-content");
-    const loadingSpinner = button.querySelector(".loading-spinner");
-    
-    try {
-        // Show loading state
-        buttonContent.style.display = "none";
-        loadingSpinner.style.display = "block";
-        button.disabled = true;
-        
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await firebase.auth().signInWithPopup(provider);
-    } catch (error) {
-        alert("Login failed: " + error.message);
-        
-        // Reset button state
-        buttonContent.style.display = "flex";
-        loadingSpinner.style.display = "none";
-        button.disabled = false;
-    }
-});
-
-// ✅ Auth state + admin check
-firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
-    // Remove access check and directly redirect all logged in users
-    window.location.href = "admin.html";
-  }
-});
-</script>
+    <!-- Authentication Script -->
+    <script src="login.js"></script>
 </body>
 </html>
