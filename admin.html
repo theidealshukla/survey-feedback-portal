@@ -7,7 +7,10 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+ 
+  
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
   <div class="header">
@@ -19,7 +22,12 @@
     <div class="card"><h2 id="totalSubmissions">0</h2><p>Total Submissions</p></div>
     <div class="card"><h2 id="openTickets">0</h2><p>Open Tickets</p></div>
     <div class="card"><h2 id="resolvedToday">0</h2><p>Resolved Today</p></div>
-    <div class="card"><h2 id="avgNPS">-</h2><p>Avg NPS</p></div>
+    <div class="card">
+      <div class="nps-container">
+        <h2 id="avgNPS">-</h2>
+        <p>NPS Score</p>
+      </div>
+    </div>
   </div>
 
   <div class="filters">
@@ -52,20 +60,22 @@
     </button>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Date</th>
-        <th>Sentiment</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="dataTable"></tbody>
-  </table>
+  <div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Sentiment</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="dataTable"></tbody>
+    </table>
+</div>
 
   <div class="modal" id="viewModal">
     <div class="modal-content">
@@ -75,6 +85,12 @@
       <div id="statusUpdate"></div>
     </div>
   </div>
+
+  <footer class="footer">
+    <div class="footer-bottom">
+      <p>Made with ❤️ by Team NextWave &copy; 2025. All rights reserved.</p>
+    </div>
+  </footer>
 
   <script>
     const firebaseConfig = {
@@ -251,6 +267,129 @@
       }
     }
 
+    function analyzeSentiment(text) {
+      const positiveWords = [
+        "good", "great", "excellent", "amazing", "wonderful", "fantastic", "helpful",
+        "best", "happy", "satisfied", "thank", "thanks", "awesome", "love", "perfect",
+        "outstanding", "exceptional", "brilliant", "superb", "delightful", "pleasant",
+        "impressed", "efficient", "fast", "quick", "responsive", "easy", "simple",
+        "user-friendly", "intuitive", "smooth", "reliable", "trustworthy", "valuable",
+        "worth", "recommend", "professional", "clean", "organized", "secure", "safe",
+        "innovative", "improved", "better", "working", "works well", "convenient"
+      ];
+
+      const negativeWords = [
+        "bad", "poor", "terrible", "awful", "horrible", "worst", "disgusting", "unacceptable",
+        "unhappy", "unsatisfied", "dissatisfied", "frustrated", "disappointed", "regret",
+        "issue", "problem", "bug", "error", "crash", "fail", "failure", "doesn't work",
+        "does not work", "not working", "not good", "not great", "broken", "glitch",
+        "slow", "laggy", "delayed", "late", "complicated", "confusing", "unclear",
+        "hard", "difficult", "annoying", "painful", "hate", "dislike", "boring", "waste",
+        "expensive", "overpriced", "not worth", "rude", "unhelpful", "ignored", "incomplete",
+        "dirty", "messy", "unsafe", "unreliable", "untrustworthy", "crappy", "junk",
+        "never again", "no support", "can't use", "can't login", "locked out", "inconvenient"
+      ];
+
+      text = text.toLowerCase();
+      let positiveScore = 0;
+      let negativeScore = 0;
+
+      // Count matches
+      positiveWords.forEach(word => {
+        const regex = new RegExp('\\b' + word + '\\b', 'gi');
+        const matches = text.match(regex);
+        if (matches) positiveScore += matches.length;
+      });
+
+      negativeWords.forEach(word => {
+        const regex = new RegExp('\\b' + word + '\\b', 'gi');
+        const matches = text.match(regex);
+        if (matches) negativeScore += matches.length;
+      });
+
+      // Add CSS for sentiment badges
+      return generateSentimentBadge(positiveScore, negativeScore);
+    }
+
+    function generateSentimentBadge(positiveScore, negativeScore) {
+      const diff = positiveScore - negativeScore;
+      
+      if (diff > 0) {
+        return `<span class="badge badge-positive">Positive (${positiveScore})</span>`;
+      } else if (diff < 0) {
+        return `<span class="badge badge-negative">Negative (${Math.abs(negativeScore)})</span>`;
+      } else {
+        return `<span class="badge badge-neutral">Neutral</span>`;
+      }
+    }
+
+    function analyzeSurveyData(surveyData) {
+      let sentimentScore = 0;
+
+      // Analyze recommendation score
+      const recommendText = String(surveyData.recommend).toLowerCase();
+      if (recommendText.includes('definitely')) sentimentScore += 2;
+      
+      // Analyze ease of use
+      const easeText = String(surveyData.ease).toLowerCase();
+      if (easeText.includes('very easy')) sentimentScore += 1;
+      
+      // Analyze quality
+      const qualityText = String(surveyData.quality).toLowerCase();
+      if (qualityText.includes('excellent')) sentimentScore += 1;
+      
+      // Analyze text feedback
+      const feedback = surveyData.feedback?.toLowerCase() || '';
+      if (feedback.includes('nice')) sentimentScore += 1;
+
+      // Generate final sentiment badge with more detailed scoring
+      if (sentimentScore > 0) {
+        return `<span class="badge badge-positive">Positive (+${sentimentScore})</span>`;
+      } else if (sentimentScore < 0) {
+        return `<span class="badge badge-negative">Negative (${sentimentScore})</span>`;
+      } else {
+        return `<span class="badge badge-neutral">Neutral</span>`;
+      }
+    }
+
+    function analyzeSurveySentiment(surveyData) {
+      // Combine all dropdown answers and feedback
+      const answers = [
+        surveyData.quality,
+        surveyData.ease,
+        surveyData.recommend,
+        surveyData.npsScore,
+        surveyData.feedback
+      ].map(a => (a || '').toString().toLowerCase()).join(' ');
+
+      return analyzeSentiment(answers);
+    }
+
+    function analyzeComplaintSentiment(complaintData) {
+      const message = (complaintData.message || '').toLowerCase();
+      return analyzeSentiment(message);
+    }
+
+    let gaugeChart = null;
+
+    function updateNPSGauge(score) {
+        // Ensure score is between -100 and 100
+        score = Math.max(-100, Math.min(100, score));
+        
+        // Update the display value with color based on score
+        const npsElement = document.getElementById('avgNPS');
+        npsElement.innerText = score + '%';
+        
+        // Set color based on score ranges
+        if (score >= 80) {
+            npsElement.style.color = '#4caf50'; // green
+        } else if (score >= 50) {
+            npsElement.style.color = '#ffc107'; // yellow
+        } else {
+            npsElement.style.color = '#dc3545'; // red
+        }
+    }
+
     async function loadDashboard() {
       console.log('Starting dashboard data load...');
       
@@ -346,14 +485,15 @@
                 <p><strong>Message:</strong> ${data.message}</p>`;
 
               // For complaints
+              const sentiment = analyzeComplaintSentiment(data);
               document.getElementById("dataTable").innerHTML += `
                 <tr>
                   <td>${data.name}</td>
                   <td>${data.email}</td>
                   <td>Complaint</td>
-                  <td><span class="badge ${data.status === 'open' ? 'badge-yellow' : 'badge-green'}">${data.status}</span></td>
+                  <td><span class="badge ${data.status.toLowerCase() === 'open' ? 'badge-yellow' : 'badge-green'}">${data.status}</span></td>
                   <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-                  <td>${analyzeSentiment(data.description || '')}</td>
+                  <td>${sentiment}</td>
                   <td><button class="btn" onclick='showModal("${doc.id}", true, ${JSON.stringify(details)}, "${data.status}")'>View</button></td>
                 </tr>`;
             }
@@ -369,13 +509,12 @@
         if (createdDate && isDateInRange(createdDate)) {
           total++;
 
-          if (data.npsScore != null) {
-            const score = parseInt(data.npsScore);
-            totalResponses++;
-            if (score >= 9) promoters++;
-            else if (score <= 6) detractors++;
-            else passives++;
-          }
+          // Sentiment analysis for survey
+          const sentiment = analyzeSurveySentiment(data);
+          if (sentiment.includes('Positive')) promoters++;
+          else if (sentiment.includes('Negative')) detractors++;
+          else passives++;
+          totalResponses++;
 
           // Add this section to display survey data in table
           if ((typeFilter === "survey" || typeFilter === "all")) {
@@ -394,7 +533,7 @@
                 <td>Survey</td>
                 <td><span class="badge badge-blue">N/A</span></td>
                 <td>${data.createdAt?.toDate().toLocaleDateString()}</td>
-                <td>${analyzeSurveyData(data)}</td>
+                <td>${sentiment}</td>
                 <td><button class="btn" onclick='showModal("${doc.id}", false, ${JSON.stringify(details)})'>View</button></td>
               </tr>`;
           }
@@ -406,6 +545,10 @@
       document.getElementById("openTickets").innerText = open;
       document.getElementById("resolvedToday").innerText = resolvedToday;
       document.getElementById("avgNPS").innerText = totalResponses ? ((promoters - detractors) / totalResponses * 100).toFixed(2) + '%' : '-';
+
+      // Update NPS gauge
+      const npsScore = totalResponses ? ((promoters - detractors) / totalResponses * 100) : 0;
+      updateNPSGauge(Number(npsScore.toFixed(0)));
     }
 
     function exportToCSV() {
@@ -441,91 +584,6 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    }
-
-    function analyzeSentiment(text) {
-      const positiveWords = [
-        "good", "great", "excellent", "amazing", "wonderful", "fantastic", "helpful",
-        "best", "happy", "satisfied", "thank", "thanks", "awesome", "love", "perfect",
-        "outstanding", "exceptional", "brilliant", "superb", "delightful", "pleasant",
-        "impressed", "efficient", "fast", "quick", "responsive", "easy", "simple",
-        "user-friendly", "intuitive", "smooth", "reliable", "trustworthy", "valuable",
-        "worth", "recommend", "professional", "clean", "organized", "secure", "safe",
-        "innovative", "improved", "better", "working", "works well", "convenient"
-      ];
-
-      const negativeWords = [
-        "bad", "poor", "terrible", "awful", "horrible", "worst", "disgusting", "unacceptable",
-        "unhappy", "unsatisfied", "dissatisfied", "frustrated", "disappointed", "regret",
-        "issue", "problem", "bug", "error", "crash", "fail", "failure", "doesn't work",
-        "does not work", "not working", "not good", "not great", "broken", "glitch",
-        "slow", "laggy", "delayed", "late", "complicated", "confusing", "unclear",
-        "hard", "difficult", "annoying", "painful", "hate", "dislike", "boring", "waste",
-        "expensive", "overpriced", "not worth", "rude", "unhelpful", "ignored", "incomplete",
-        "dirty", "messy", "unsafe", "unreliable", "untrustworthy", "crappy", "junk",
-        "never again", "no support", "can't use", "can't login", "locked out", "inconvenient"
-      ];
-
-      text = text.toLowerCase();
-      let positiveScore = 0;
-      let negativeScore = 0;
-
-      // Count matches
-      positiveWords.forEach(word => {
-        const regex = new RegExp('\\b' + word + '\\b', 'gi');
-        const matches = text.match(regex);
-        if (matches) positiveScore += matches.length;
-      });
-
-      negativeWords.forEach(word => {
-        const regex = new RegExp('\\b' + word + '\\b', 'gi');
-        const matches = text.match(regex);
-        if (matches) negativeScore += matches.length;
-      });
-
-      // Add CSS for sentiment badges
-      return generateSentimentBadge(positiveScore, negativeScore);
-    }
-
-    function generateSentimentBadge(positiveScore, negativeScore) {
-      const diff = positiveScore - negativeScore;
-      
-      if (diff > 0) {
-        return `<span class="badge badge-positive">Positive (${positiveScore})</span>`;
-      } else if (diff < 0) {
-        return `<span class="badge badge-negative">Negative (${Math.abs(negativeScore)})</span>`;
-      } else {
-        return `<span class="badge badge-neutral">Neutral</span>`;
-      }
-    }
-
-    function analyzeSurveyData(surveyData) {
-      let sentimentScore = 0;
-
-      // Analyze recommendation score
-      const recommendText = String(surveyData.recommend).toLowerCase();
-      if (recommendText.includes('definitely')) sentimentScore += 2;
-      
-      // Analyze ease of use
-      const easeText = String(surveyData.ease).toLowerCase();
-      if (easeText.includes('very easy')) sentimentScore += 1;
-      
-      // Analyze quality
-      const qualityText = String(surveyData.quality).toLowerCase();
-      if (qualityText.includes('excellent')) sentimentScore += 1;
-      
-      // Analyze text feedback
-      const feedback = surveyData.feedback?.toLowerCase() || '';
-      if (feedback.includes('nice')) sentimentScore += 1;
-
-      // Generate final sentiment badge with more detailed scoring
-      if (sentimentScore > 0) {
-        return `<span class="badge badge-positive">Positive (+${sentimentScore})</span>`;
-      } else if (sentimentScore < 0) {
-        return `<span class="badge badge-negative">Negative (${sentimentScore})</span>`;
-      } else {
-        return `<span class="badge badge-neutral">Neutral</span>`;
-      }
     }
 
     loadDashboard();
