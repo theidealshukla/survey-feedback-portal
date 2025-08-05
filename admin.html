@@ -105,20 +105,16 @@
     <div id="aiSummary" class="ai-summary-modern">
       <div class="ai-summary-header">
         <i class="fas fa-robot"></i>
-        <span>AI Summary</span> <!-- This is the heading -->
-        <button
-          class="ai-refresh-btn"
-          onclick="fetchAIComplaintSummary()"
-          title="Refresh"
-        >
+        <span>AI Summary</span>
+        <button class="ai-refresh-btn" onclick="fetchAIComplaintSummary()">
           <i class="fas fa-sync-alt"></i>
         </button>
       </div>
       <div class="ai-content">
-        <div class="ai-summary-content">Loading summary...</div>
-        
+        <!-- Add specific container for grid layout -->
+        <div class="ai-summary-content"></div>
+        <div class="summary-grid"></div>
       </div>
-      
       <div class="ai-summary-footer">
         <span id="aiSummaryMeta"></span>
       </div>
