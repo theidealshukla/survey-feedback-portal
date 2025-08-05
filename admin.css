@@ -656,3 +656,137 @@ body.modal-open {
   margin-bottom: 6px;
   color: #2c3e50;
 }
+/* AI Suggestions Styling */
+.ai-suggestions {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.suggestion-section {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}
+
+.suggestion-section:last-child {
+  margin-bottom: 0;
+}
+
+.suggestion-section h5 {
+  margin: 0 0 10px 0;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.suggestion-section h5 i {
+  margin-right: 8px;
+  color: #007bff;
+}
+
+.suggestion-text {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #495057;
+  border-left: 3px solid #28a745;
+}
+
+.apply-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.apply-btn:hover {
+  background: #218838;
+}
+
+.apply-btn i {
+  margin-right: 5px;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  color: #6c757d;
+  font-size: 13px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.loading i {
+  margin-right: 8px;
+  color: #007bff;
+}
+
+/* Error state */
+.error-message {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.error-message i {
+  margin-right: 10px;
+  margin-top: 2px;
+  color: #dc3545;
+}
+
+.error-details {
+  flex: 1;
+}
+
+.error-details strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.error-details p {
+  margin: 5px 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.retry-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.retry-btn:hover {
+  background: #c82333;
+}
+
+.retry-btn i {
+  margin-right: 4px;
+}
+
+/* AI RCA Loader */
+.ai-rca-loader {
+  min-height: 40px;
+}
