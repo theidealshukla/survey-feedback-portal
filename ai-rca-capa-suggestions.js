@@ -1,6 +1,6 @@
 async function getAISuggestionsForComplaint(message, docId) {
   try {
-    const apiKey = "Bearer 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";
+    const apiKey = "Bearer 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";
 
     const prompt = `You are a senior quality analyst. A customer has submitted this complaint:
 
@@ -64,4 +64,5 @@ Be factual, brief, and avoid assumptions.`;
     }
   }
 }
+
 
