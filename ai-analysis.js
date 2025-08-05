@@ -1,5 +1,5 @@
 const OPENROUTER_API_KEY =
-  "Bearer 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";
+  "Bearer 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";
 
 function formatAISummary(text) {
   // Convert numbered headings to <h4>, bullets to <ul><li>, paragraphs to <p>
@@ -149,4 +149,5 @@ Data: ${messages.join(" | ")}`;
       '<div class="error-message">Failed to generate AI summary. Please try again.</div>';
   }
 }
+
 
