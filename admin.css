@@ -790,3 +790,28 @@ body.modal-open {
 .ai-rca-loader {
   min-height: 40px;
 }
+
+footer {
+  text-align: center;
+  padding: 20px 0;
+  margin-top: 40px;
+  border-top: 1px solid #dee2e6;
+}
+
+footer p {
+  color: #666;
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+footer a {
+  color: #007bff;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+footer a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
