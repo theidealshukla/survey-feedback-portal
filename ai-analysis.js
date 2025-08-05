@@ -1,23 +1,23 @@
-const OPENROUTER_API_KEY =
-  "Bearer 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";
+async function generateAISummary(messages) {
+  try {
+    const response = await fetch("https://ai-backend-df9i.onrender.com/api/ai-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages })
+    });
 
-function formatAISummary(text) {
-  // Convert numbered headings to <h4>, bullets to <ul><li>, paragraphs to <p>
-  let html = text
-    .replace(/^\s*Based on.*$/m, "<p>$&</p>") // intro line
-    .replace(/^\d+\.\s.*$/gm, (match) => `<h4>${match}</h4>`) // numbered headings
-    .replace(/^- (.*)$/gm, "<li>$1</li>"); // bullet points
-
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>");
-  return html;
+    const result = await response.json();
+    return result?.choices?.[0]?.message?.content || "AI summary not available.";
+  } catch (error) {
+    console.error("❌ Error generating AI summary:", error);
+    return "Failed to generate AI summary.";
+  }
 }
 
 async function fetchAIComplaintSummary() {
   const aiSummaryElement = document.querySelector(".ai-summary-content");
   if (!aiSummaryElement) return;
 
-  // Show loading state
   aiSummaryElement.innerHTML =
     '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Analyzing complaints and surveys...</div>';
 
@@ -38,116 +38,49 @@ async function fetchAIComplaintSummary() {
     });
 
     if (messages.length === 0) {
-      aiSummaryElement.innerHTML =
-        "No complaints or survey feedback to analyze.";
+      aiSummaryElement.innerHTML = "No complaints or survey feedback to analyze.";
       return;
     }
 
-    const prompt = `Analyze the following ${messages.length} customer feedback entries and summarize in this format:
+    const summary = await generateAISummary(messages);
 
-**KEY INSIGHTS:**
-- 1–2 sentence summary
-
-**TOP ISSUES:**
-1. **Issue Name** (X mentions) – short explanation
-2. ...
-3. ...
-
-**SENTIMENT:** Positive / Negative / Mixed
-
-**RECOMMENDATIONS:**
-• Recommendation 1
-• Recommendation 2
-
-Be concise, factual, and use only the format above.
-
-
-
-Data: ${messages.join(" | ")}`;
-
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: OPENROUTER_API_KEY,
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-3-haiku",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 500,
-          temperature: 0.3,
-        }),
-      }
-    );
-
-    const result = await response.json();
-    const summaryText =
-      result?.choices?.[0]?.message?.content || "No summary generated.";
-
-    // Parse and format the summary with improved structure
-    let formattedSummary = summaryText;
-
-    // Extract sections
     const keyInsights =
-      summaryText
-        .match(/\*\*KEY INSIGHTS:\*\*([\s\S]*?)(?=\*\*TOP ISSUES:\*\*)/)?.[1]
-        ?.trim() || "";
-    const topIssues =
-      summaryText
-        .match(/\*\*TOP ISSUES:\*\*([\s\S]*?)(?=\*\*SENTIMENT:\*\*)/)?.[1]
-        ?.trim() || "";
-    const sentiment =
-      summaryText
-        .match(/\*\*SENTIMENT:\*\*([\s\S]*?)(?=\*\*RECOMMENDATIONS:\*\*)/)?.[1]
-        ?.trim() || "";
-    const recommendations =
-      summaryText.match(/\*\*RECOMMENDATIONS:\*\*([\s\S]*?)$/)?.[1]?.trim() ||
-      "";
+      summary.match(/\*\*KEY INSIGHTS:\*\*([\s\S]*?)(?=\*\*COMMON ISSUES:\*\*)/)?.[1]?.trim() || "";
+    const commonIssues =
+      summary.match(/\*\*COMMON ISSUES:\*\*([\s\S]*?)(?=\*\*SUGGESTIONS:\*\*)/)?.[1]?.trim() || "";
+    const suggestions =
+      summary.match(/\*\*SUGGESTIONS:\*\*([\s\S]*)/)?.[1]?.trim() || "";
 
-    // Format issues list
-    const issuesHTML = topIssues
+    const issuesHTML = commonIssues
       .split("\n")
-      .filter((line) => line.trim() && line.match(/^\d+\./))
-      .map((issue) => `<div class="issue-item">${issue.trim()}</div>`)
+      .filter((line) => line.trim() && line.match(/^[-•]/))
+      .map((line) => `<div class="issue-item">${line.replace(/^[-•]\s*/, "")}</div>`)
       .join("");
 
-    // Format recommendations list
-    const recommendationsHTML = recommendations
+    const suggestionsHTML = suggestions
       .split("\n")
-      .filter((line) => line.trim() && line.startsWith("•"))
-      .map((rec) => `<div class="recommendation-item">${rec.trim()}</div>`)
+      .filter((line) => line.trim() && line.match(/^[-•]/))
+      .map((line) => `<div class="recommendation-item">${line.replace(/^[-•]\s*/, "")}</div>`)
       .join("");
 
-    // Create final formatted HTML
-    const finalHTML = `
-      
-      
+    aiSummaryElement.innerHTML = `
       <div class="summary-grid">
         <div class="issues-column">
-          <h4><i class="fas fa-exclamation-triangle"></i> TOP ISSUES</h4>
+          <h4><i class="fas fa-exclamation-circle"></i> COMMON ISSUES</h4>
           ${issuesHTML}
         </div>
-        
         <div class="recommendations-column">
-          <h4><i class="fas fa-lightbulb"></i> RECOMMENDATIONS</h4>
-          ${recommendationsHTML}
+          <h4><i class="fas fa-lightbulb"></i> SUGGESTIONS</h4>
+          ${suggestionsHTML}
         </div>
       </div>
-      
-      
     `;
 
-    aiSummaryElement.innerHTML = finalHTML;
-    document.getElementById(
-      "aiSummaryMeta"
-    ).innerText = `Last updated: ${new Date().toLocaleString()}`;
+    document.getElementById("aiSummaryMeta").innerText =
+      `Last updated: ${new Date().toLocaleString()}`;
   } catch (error) {
-    console.error("Error fetching AI summary:", error);
+    console.error("❌ Error loading AI Summary:", error);
     aiSummaryElement.innerHTML =
-      '<div class="error-message">Failed to generate AI summary. Please try again.</div>';
+      '<div class="error-message">Failed to generate AI summary.</div>';
   }
 }
-
-
