@@ -1,68 +1,48 @@
-async function getAISuggestionsForComplaint(message, docId) {
+async function generateRcaCapaSuggestions(messages) {
+  const prompt = `
+You are an AI assistant helping with **RCA (Root Cause Analysis)** and **CAPA (Corrective and Preventive Actions)**.
+
+Given the following user feedbacks, complaints, and surveys, generate a structured analysis in this format:
+
+**ROOT CAUSES:**
+- Root cause 1
+- Root cause 2
+
+**CORRECTIVE ACTIONS (Short-Term):**
+- Action 1
+- Action 2
+
+**PREVENTIVE ACTIONS (Long-Term):**
+- Action 1
+- Action 2
+
+Feedbacks:
+${messages.join(" | ")}
+  `.trim();
+
   try {
-    const apiKey = "Bearer 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";
-
-    const prompt = `You are a senior quality analyst. A customer has submitted this complaint:
-
-"${message}"
-
-Your task:
-1. Write a very concise, clear Root Cause Analysis (RCA) in 1 sentence. No filler words.
-2. Write a very concise, clear Corrective and Preventive Action (CAPA) in 1-2 short actionable sentences. No unnecessary details.
-
-Format exactly:
-**RCA:** [short RCA]
-**CAPA:** [short CAPA]
-
-Be factual, brief, and avoid assumptions.`;
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch("https://ai-backend-df9i.onrender.com/api/ai-summary", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: apiKey,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 400,
-        temperature: 0.2,
-      }),
+        messages: [prompt]
+      })
     });
 
     const result = await response.json();
-    const suggestion = result?.choices?.[0]?.message?.content || "";
+    const summary = result?.choices?.[0]?.message?.content;
 
-    // ✅ Extract RCA & CAPA
-    const rcaMatch = suggestion.match(/\*\*RCA:\*\*\s*(.+?)\n/i);
-    const capaMatch = suggestion.match(/\*\*CAPA:\*\*\s*(.+)/i);
+    if (!summary) return "No RCA/CAPA generated.";
 
-    const rcaText = rcaMatch ? rcaMatch[1].trim() : "No suggestion generated.";
-    const capaText = capaMatch ? capaMatch[1].trim() : "No suggestion generated.";
+    // Display RCA/CAPA (you can customize this)
+    const container = document.getElementById("rcaCapaOutput");
+    if (container) container.innerText = summary;
 
-    const container = document.getElementById("aiSuggestion-" + docId);
-    if (container) {
-      container.innerHTML = `
-        <div class="ai-rca-capa-suggestions">
-          <p><strong>AI Suggested RCA:</strong><br><em>${rcaText}</em></p>
-          <p><strong>AI Suggested CAPA:</strong><br><em>${capaText}</em></p>
-          <button id="useSuggestionBtn-${docId}" class="update-btn">Use Suggestions</button>
-        </div>
-      `;
-
-      // ✅ Attach event listener (safe)
-      document.getElementById(`useSuggestionBtn-${docId}`).addEventListener("click", () => {
-        document.getElementById("rcaInput").value = rcaText;
-        document.getElementById("capaInput").value = capaText;
-      });
-    }
-  } catch (error) {
-    console.error("AI RCA/CAPA suggestion error:", error);
-    const container = document.getElementById("aiSuggestion-" + docId);
-    if (container) {
-      container.innerHTML = `<p style="color:#dc3545;">AI suggestion failed. Please try again.</p>`;
-    }
+    return summary;
+  } catch (err) {
+    console.error("❌ RCA/CAPA AI Error:", err);
+    return "Failed to generate RCA/CAPA suggestions.";
   }
 }
-
-
