@@ -9,6 +9,17 @@ Collect, Manage & Resolve Customer Feedback — Intelligently.
 In a world where every customer's voice counts, this project simplifies feedback collection, ticket management, and insight generation. It merges complaints and surveys into one portal — complete with automated ticketing, AI summaries, NPS analysis, and an admin dashboard.
 
 ---
+## 🌐 Live Demo
+Experience the Smart Customer Support Portal in action:
+
+-📋** Customer Feedback Form:**
+https://surveyformnf.netlify.app/
+Customers can submit complaints or surveys. For complaints, a unique ticket ID is auto-generated and sent via email.
+
+-🛠️** Admin Dashboard:**
+https://survey-feedback-portal.netlify.app/admin.html
+(🔐 Google Sign-In required)
+Admins can view and manage all feedback, analyze AI summaries, track NPS, update ticket status, and export data.
 
 ## 🔑 Key Features
 
