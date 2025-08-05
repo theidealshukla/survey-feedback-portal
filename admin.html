@@ -1,103 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="admin.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-</head>
-<body>
-  <div class="header">
-    <h1>Admin Dashboard</h1>
-    <button class="logout" onclick="logout()">Logout</button>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <div class="cards">
-    <div class="card"><h2 id="totalSubmissions">0</h2><p>Total Submissions</p></div>
-    <div class="card"><h2 id="openTickets">0</h2><p>Open Tickets</p></div>
-    <div class="card"><h2 id="resolvedToday">0</h2><p>Resolved Today</p></div>
-    <div class="card">
-      <div class="nps-container">
-        <h2 id="avgNPS">-</h2>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="admin.css" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Admin Dashboard</h1>
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h2 id="totalSubmissions">0</h2>
+        <p>Total Submissions</p>
+      </div>
+      <div class="card">
+        <h2 id="openTickets">0</h2>
+        <p>Open Tickets</p>
+      </div>
+      <div class="card">
+        <h2 id="resolvedToday">0</h2>
+        <p>Resolved Today</p>
+      </div>
+      <div class="card">
+        <h2 id="npsScore">0</h2>
         <p>NPS Score</p>
       </div>
     </div>
-  </div>
 
-  <div class="filters">
-    <select id="filterType" onchange="loadDashboard()">
-      <option value="all">All Types</option>
-      <option value="complaint">Complaint</option>
-      <option value="survey">Survey</option>
-    </select>
-    <select id="filterStatus" onchange="loadDashboard()">
-      <option value="all">All Status</option>
-      <option value="open">Open</option>
-      <option value="resolved">Resolved</option>
-    </select>
+    <div class="filters">
+      <select id="filterType" onchange="loadDashboard()">
+        <option value="all">All Types</option>
+        <option value="complaint">Complaint</option>
+        <option value="survey">Survey</option>
+      </select>
+      <select id="filterStatus" onchange="loadDashboard()">
+        <option value="all">All Status</option>
+        <option value="open">Open</option>
+        <option value="resolved">Resolved</option>
+      </select>
 
-    <select id="dateFilter" onchange="handleDateFilter()">
-      <option value="all">All Time</option>
-      <option value="today">Today</option>
-      <option value="week">This Week</option>
-      <option value="month">This Month</option>
-      <option value="custom">Custom Date Range</option>
-    </select>
+      <select id="dateFilter" onchange="handleDateFilter()">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+        <option value="custom">Custom Date Range</option>
+      </select>
 
-    <div id="customDateInputs" style="display: none;">
-      <input type="date" id="startDate" onchange="loadDashboard()">
-      <input type="date" id="endDate" onchange="loadDashboard()">
+      <div id="customDateInputs" style="display: none">
+        <input type="date" id="startDate" onchange="loadDashboard()" />
+        <input type="date" id="endDate" onchange="loadDashboard()" />
+      </div>
+
+      <button onclick="exportToCSV()" class="export-btn">Export to CSV</button>
     </div>
 
-    <button onclick="exportToCSV()" class="export-btn">
-      Export to CSV
-    </button>
-  </div>
-
-  <div class="table-container">
-    <table>
+    <div class="table-container">
+      <table>
         <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Sentiment</th>
-                <th>Action</th>
-            </tr>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Sentiment</th>
+            <th>Action</th>
+          </tr>
         </thead>
         <tbody id="dataTable"></tbody>
-    </table>
-</div>
-
-<!-- Add AI Analysis Card -->
-
-  <div class="modal" id="viewModal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal()">&times;</span>
-      <h3>Submission Details</h3>
-      <div id="modalDetails"></div>
-      <div id="statusUpdate"></div>
+      </table>
     </div>
-  </div>
 
-  <footer class="footer">
-    <div class="footer-bottom">
-      <p>Made with ❤️ by Team NextWave &copy; 2025. All rights reserved.</p>
+    <!-- Add AI Analysis Card -->
+
+    <div class="modal" id="viewModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3>Submission Details</h3>
+        <div id="modalDetails"></div>
+        <div id="statusUpdate"></div>
+      </div>
     </div>
-  </footer>
 
-  <!-- Load JavaScript last -->
-  <script src="admin.js"></script>
-</body>
+    <div id="aiSummary" class="ai-summary-modern">
+      <div class="ai-summary-header">
+        <i class="fas fa-robot"></i>
+        <span>AI Summary</span> <!-- This is the heading -->
+        <button
+          class="ai-refresh-btn"
+          onclick="fetchAIComplaintSummary()"
+          title="Refresh"
+        >
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+      <div class="ai-content">
+        <div class="ai-summary-content">Loading summary...</div>
+        
+      </div>
+      
+      <div class="ai-summary-footer">
+        <span id="aiSummaryMeta"></span>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-bottom">
+        <p>Made with ❤️ by Team NextWave &copy; 2025. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <!-- Load JavaScript last -->
+    <script src="admin.js"></script>
+    <script src="ai-analysis.js"></script>
+    <script src="ai-rca-capa-suggestions.js"></script>
+  </body>
 </html>
-
