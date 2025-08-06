@@ -22,23 +22,34 @@ async function fetchAIComplaintSummary() {
     '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Analyzing complaints and surveys...</div>';
 
   try {
-    const [complaintsSnap, surveysSnap] = await Promise.all([
-      db.collection("complaints").get(),
-      db.collection("surveys").get(),
-    ]);
+    // Get complaints with status filter
+    const complaintsSnap = await db.collection("complaints")
+      .where("status", "==", "open")  // Only get open complaints
+      .get();
+    
+    const surveysSnap = await db.collection("surveys").get();
 
     const messages = [];
     complaintsSnap.forEach((doc) => {
       const data = doc.data();
-      if (data.message) messages.push(`Complaint: ${data.message}`);
+      if (data.message) {
+        messages.push(`Open Complaint: ${data.message}`);
+        console.log("Found open complaint:", data); // Debug log
+      }
     });
+
+    // Rest of surveys processing
     surveysSnap.forEach((doc) => {
       const data = doc.data();
       if (data.feedback) messages.push(`Survey: ${data.feedback}`);
     });
 
     if (messages.length === 0) {
-      aiSummaryElement.innerHTML = "No complaints or survey feedback to analyze.";
+      aiSummaryElement.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-inbox fa-2x"></i>
+          <p>No open complaints or feedback to analyze.</p>
+        </div>`;
       return;
     }
 
@@ -66,21 +77,24 @@ async function fetchAIComplaintSummary() {
     aiSummaryElement.innerHTML = `
       <div class="summary-grid">
         <div class="issues-column">
-          <h4><i class="fas fa-exclamation-circle"></i> COMMON ISSUES</h4>
-          ${issuesHTML}
+          <h4><i class="fas fa-exclamation-circle"></i> OPEN COMPLAINTS (${complaintsSnap.size})</h4>
+          ${issuesHTML || '<p class="no-data">No open complaints found</p>'}
         </div>
         <div class="recommendations-column">
           <h4><i class="fas fa-lightbulb"></i> SUGGESTIONS</h4>
-          ${suggestionsHTML}
+          ${suggestionsHTML || '<p class="no-data">No suggestions available</p>'}
         </div>
       </div>
     `;
 
+    // Add debug info
+    console.log(`Found ${complaintsSnap.size} open complaints`);
+    
     document.getElementById("aiSummaryMeta").innerText =
       `Last updated: ${new Date().toLocaleString()}`;
   } catch (error) {
     console.error("❌ Error loading AI Summary:", error);
     aiSummaryElement.innerHTML =
-      '<div class="error-message">Failed to generate AI summary.</div>';
+      '<div class="error-message">Failed to generate AI summary. Error: ' + error.message + '</div>';
   }
 }
