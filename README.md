@@ -12,11 +12,11 @@ In a world where every customer's voice counts, this project simplifies feedback
 ## 🌐 Live Demo
 Experience the Smart Customer Support Portal in action:
 
--📋** Customer Feedback Form:**
+## 📋Customer Feedback Form:
 https://surveyformnf.netlify.app/
 Customers can submit complaints or surveys. For complaints, a unique ticket ID is auto-generated and sent via email.
 
--🛠️** Admin Dashboard:**
+## 🛠️ Admin Dashboard:
 https://survey-feedback-portal.netlify.app/admin.html
 (🔐 Google Sign-In required)
 Admins can view and manage all feedback, analyze AI summaries, track NPS, update ticket status, and export data.
