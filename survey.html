@@ -8,9 +8,8 @@
   <script>
     emailjs.init("NqzIwh4ok1CVLyylH"); // Your EmailJS public key
   </script>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
   <style>
     body {
@@ -186,19 +185,10 @@
 </div>
 
 <script>
-  // Firebase Setup
-  const firebaseConfig = {
-    apiKey: "AIzaSyC1XazQLwfBHUW527Yqz5FyRzNFDjv5mII",
-    authDomain: "smart-customer-support-portal.firebaseapp.com",
-    projectId: "smart-customer-support-portal",
-    storageBucket: "smart-customer-support-portal.firebasestorage.app",
-    messagingSenderId: "59178725363",
-    appId: "1:59178725363:web:c9063beed6217833926c86",
-    measurementId: "G-372XHVDCSY"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  // Supabase Setup
+  const SUPABASE_URL = 'https://wqgaboyirihxccrzsjnn.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZ2Fib3lpcmloeGNjcnpzam5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyNzA1NzAsImV4cCI6MjA3Mjg0NjU3MH0.9JOkoTP6cVZYbVD0I9BzH5Jm06t1us4xvjMcpsFNYrY';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // Toggle between forms
   document.getElementById("goToComplaint").onclick = (e) => {
@@ -217,8 +207,8 @@
     return "CMP-" + Math.random().toString(36).substr(2, 6).toUpperCase();
   }
 
-  // Survey Submit
-  document.getElementById("surveyForm").addEventListener("submit", function (e) {
+  // Survey Submit (Supabase)
+  document.getElementById("surveyForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     const name = document.getElementById("s-name").value;
     const email = document.getElementById("s-email").value;
@@ -228,24 +218,33 @@
     const npsScore = parseInt(document.getElementById("s-nps").value);
     const feedback = document.getElementById("s-feedback").value;
 
-    db.collection("surveys").add({
-      name,
-      email,
-      quality,
-      ease,
-      recommend,
-      npsScore,
-      feedback,
-      createdAt: new Date()
-    }).then(() => {
+    const { data, error } = await supabase
+      .from("surveys")
+      .insert([
+        {
+          name,
+          email,
+          quality,
+          ease,
+          recommend,
+          nps_score: npsScore, // CORRECTED to snake_case
+          feedback
+        }
+      ]);
+
+    if (error) {
+      console.error("Supabase error:", error);
+      alert("Failed to submit survey. Error: " + error.message);
+    } else {
+      console.log("Survey submitted successfully:", data);
       document.getElementById("surveyBox").style.display = "none";
-      document.getElementById("ticketInfo").innerText = ""; // No ticket for survey
+      document.getElementById("ticketInfo").innerText = "Thank you for your feedback!";
       document.getElementById("thankYouBox").style.display = "block";
-    });
+    }
   });
 
-  // Complaint Submit
-  document.getElementById("complaintForm").addEventListener("submit", function (e) {
+  // Complaint Submit (Supabase)
+  document.getElementById("complaintForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     const name = document.getElementById("c-name").value;
     const email = document.getElementById("c-email").value;
@@ -253,29 +252,39 @@
     const message = document.getElementById("c-msg").value;
     const ticketId = generateTicketId();
 
-    // Save to Firestore
-    db.collection("complaints").add({
-      name,
-      email,
-      type,
-      message,
-      ticketId,
-      status: "Open",
-      createdAt: new Date()
-    });
+    // Save to Supabase
+    const { data, error } = await supabase
+      .from("complaints")
+      .insert([
+        {
+          name,
+          email,
+          type,
+          message,
+          ticket_id: ticketId, // CORRECTED to snake_case
+          status: "open"
+        }
+      ]);
 
-    // Send email via EmailJS
-    emailjs.send("service_7y35doh", "template_ypnghxy", {
-      to_name: name,
-      to_email: email,
-      message: message,
-      ticket_id: ticketId
-    });
+    if (error) {
+      console.error("Supabase error:", error);
+      alert("Failed to submit complaint. Error: " + error.message);
+    } else {
+      console.log("Complaint submitted successfully:", data);
 
-    // Show thank you screen
-    document.getElementById("complaintBox").style.display = "none";
-    document.getElementById("ticketInfo").innerText = `Your Ticket ID is: ${ticketId}`;
-    document.getElementById("thankYouBox").style.display = "block";
+      // Send email via EmailJS (optional)
+      emailjs.send("service_7y35doh", "template_ypnghxy", {
+        to_name: name,
+        to_email: email,
+        message: message,
+        ticket_id: ticketId
+      }).catch(err => console.error("Email sending failed:", err));
+
+      // Show thank you screen
+      document.getElementById("complaintBox").style.display = "none";
+      document.getElementById("ticketInfo").innerText = `Your Ticket ID is: ${ticketId}`;
+      document.getElementById("thankYouBox").style.display = "block";
+    }
   });
 </script>
 

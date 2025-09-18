@@ -1,26 +1,31 @@
-async function generateRcaCapaSuggestions(messages) {
+async function generateRcaCapaSuggestions(complaintMessage) {
   const prompt = `
-You are an AI assistant helping with **RCA (Root Cause Analysis)** and **CAPA (Corrective and Preventive Actions)**.
+You are an expert business analyst specializing in Root Cause Analysis (RCA) and Corrective and Preventive Actions (CAPA).
 
-Given the following user feedbacks, complaints, and surveys, generate a structured analysis in this format:
+Analyze this customer complaint and provide structured recommendations:
 
-**ROOT CAUSES:**
-- Root cause 1
-- Root cause 2
+**COMPLAINT:** "${complaintMessage}"
 
-**CORRECTIVE ACTIONS (Short-Term):**
-- Action 1
-- Action 2
+Please provide your analysis in this exact format:
 
-**PREVENTIVE ACTIONS (Long-Term):**
-- Action 1
-- Action 2
+**ROOT CAUSE ANALYSIS:**
+- [Identify the underlying cause of this specific issue]
+- [Consider systemic factors that may have contributed]
 
-Feedbacks:
-${messages.join(" | ")}
+**CORRECTIVE ACTIONS (Immediate fixes):**
+- [Specific actions to resolve this customer's issue]
+- [Steps to prevent immediate recurrence]
+
+**PREVENTIVE ACTIONS (Long-term improvements):**
+- [Process improvements to prevent similar issues]
+- [Training or system changes needed]
+
+Keep responses concise, actionable, and specific to the complaint provided.
   `.trim();
 
   try {
+    console.log("🤖 Sending complaint to AI for RCA/CAPA analysis:", complaintMessage);
+    
     const response = await fetch("https://ai-backend-df9i.onrender.com/api/ai-summary", {
       method: "POST",
       headers: {
@@ -31,19 +36,33 @@ ${messages.join(" | ")}
       })
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const result = await response.json();
-    const summary = result?.choices?.[0]?.message?.content;
+    const aiResponse = result?.choices?.[0]?.message?.content;
 
-    if (!summary) return "No RCA/CAPA generated.";
+    if (!aiResponse) {
+      throw new Error("No AI response received");
+    }
 
-    // Display RCA/CAPA (you can customize this)
-    const container = document.getElementById("rcaCapaOutput");
-    if (container) container.innerText = summary;
+    console.log("✅ AI RCA/CAPA response received:", aiResponse);
+    return aiResponse;
 
-    return summary;
   } catch (err) {
     console.error("❌ RCA/CAPA AI Error:", err);
-    return "Failed to generate RCA/CAPA suggestions.";
+    return `**ROOT CAUSE ANALYSIS:**
+- Unable to generate automated analysis due to technical issues
+- Manual investigation required to determine root cause
+
+**CORRECTIVE ACTIONS:**
+- Contact customer directly to resolve immediate concern
+- Document issue details for further investigation
+
+**PREVENTIVE ACTIONS:**
+- Review similar complaints to identify patterns
+- Implement monitoring for this type of issue`;
   }
 }
 
@@ -51,156 +70,89 @@ async function getAISuggestionsForComplaint(message, docId) {
   try {
     const suggestionContainer = document.getElementById(`aiSuggestion-${docId}`);
     if (!suggestionContainer) {
-      console.error(`Container aiSuggestion-${docId} not found`);
+      console.error("❌ AI suggestion container not found for docId:", docId);
       return;
     }
 
-    console.log("🔍 Starting AI suggestion for message:", message);
+    console.log("🔍 Starting AI suggestion for complaint message:", message);
 
     // Show loading state
     suggestionContainer.innerHTML = `
-      <div class="loading">
-        <i class="fas fa-robot fa-spin"></i> 
-        <span>Analyzing complaint...</span>
+      <div class="loading" style="text-align: center; padding: 10px;">
+        <i class="fas fa-robot fa-spin" style="color: #007bff;"></i> 
+        <span style="margin-left: 8px; font-size: 13px; color: #666;">Analyzing complaint and generating RCA/CAPA suggestions...</span>
       </div>
     `;
 
-    // Try multiple API endpoints and approaches
-    let response;
-    let data;
+    // Get AI suggestions based on the complaint message
+    const aiResponse = await generateRcaCapaSuggestions(message);
     
-    // First, try the specific RCA/CAPA endpoint
-    try {
-      console.log("🚀 Trying ai-rca-capa endpoint...");
-      response = await fetch('https://ai-backend-df9i.onrender.com/api/ai-rca-capa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ message })
-      });
-
-      console.log("📡 RCA/CAPA Response status:", response.status);
-      
-      if (!response.ok) {
-        throw new Error(`RCA/CAPA API error: ${response.status} ${response.statusText}`);
-      }
-
-      data = await response.json();
-      console.log("✅ RCA/CAPA Response data:", data);
-      
-    } catch (rcaError) {
-      console.warn("⚠️ RCA/CAPA endpoint failed, trying ai-summary endpoint...", rcaError);
-      
-      // Fallback to ai-summary endpoint with specific prompt
-      try {
-        const prompt = `Analyze this customer complaint and provide:
-
-**ROOT CAUSE ANALYSIS:**
-[Identify the underlying cause of this issue]
-
-**CORRECTIVE ACTION:**
-[Immediate steps to resolve this specific complaint]
-
-**PREVENTIVE ACTION:**
-[Long-term measures to prevent similar complaints]
-
-Complaint: "${message}"
-
-Please be concise and practical.`;
-
-        response = await fetch('https://ai-backend-df9i.onrender.com/api/ai-summary', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ 
-            messages: [prompt]
-          })
-        });
-
-        console.log("📡 AI-Summary Response status:", response.status);
-        
-        if (!response.ok) {
-          throw new Error(`AI-Summary API error: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        console.log("✅ AI-Summary Response data:", result);
-        
-        const content = result?.choices?.[0]?.message?.content || result?.content || result?.summary;
-        
-        if (!content) {
-          throw new Error("No content in AI response");
-        }
-
-        // Parse the structured response
-        const rcaMatch = content.match(/\*\*ROOT CAUSE ANALYSIS:\*\*([\s\S]*?)(?=\*\*CORRECTIVE ACTION:\*\*|$)/i);
-        const capaMatch = content.match(/\*\*CORRECTIVE ACTION:\*\*([\s\S]*?)(?=\*\*PREVENTIVE ACTION:\*\*|$)/i);
-        const preventiveMatch = content.match(/\*\*PREVENTIVE ACTION:\*\*([\s\S]*?)$/i);
-
-        data = {
-          rca: rcaMatch ? rcaMatch[1].trim() : content.split('\n')[0] || "No RCA available",
-          capa: capaMatch ? capaMatch[1].trim() : content.split('\n')[1] || "No CAPA available",
-          preventive: preventiveMatch ? preventiveMatch[1].trim() : "No preventive actions available"
-        };
-        
-      } catch (summaryError) {
-        console.error("❌ Both endpoints failed:", summaryError);
-        throw summaryError;
-      }
-    }
-
-    // Validate data structure
-    if (!data || typeof data !== 'object') {
-      throw new Error("Invalid response format from AI service");
-    }
-
-    // Ensure we have at least basic suggestions
-    const rca = data.rca || data.rootCause || "Unable to determine specific root cause. Please investigate further.";
-    const capa = data.capa || data.correctiveAction || "Please implement appropriate corrective measures.";
+    console.log("📋 Processing AI response for UI display");
     
-    console.log("📋 Final processed data:", { rca, capa });
+    // Parse the AI response to extract RCA and CAPA sections
+    const rcaMatch = aiResponse.match(/\*\*ROOT CAUSE ANALYSIS:\*\*([\s\S]*?)(?=\*\*CORRECTIVE ACTIONS|$)/i);
+    const correctiveMatch = aiResponse.match(/\*\*CORRECTIVE ACTIONS[^:]*:\*\*([\s\S]*?)(?=\*\*PREVENTIVE ACTIONS|$)/i);
+    const preventiveMatch = aiResponse.match(/\*\*PREVENTIVE ACTIONS[^:]*:\*\*([\s\S]*?)$/i);
     
-    // Update the UI with suggestions
+    const rcaSuggestion = rcaMatch ? rcaMatch[1].trim() : "Unable to generate RCA suggestions";
+    const correctiveSuggestion = correctiveMatch ? correctiveMatch[1].trim() : "Unable to generate corrective action suggestions";
+    const preventiveSuggestion = preventiveMatch ? preventiveMatch[1].trim() : "Unable to generate preventive action suggestions";
+    
+    // Combine corrective and preventive actions for CAPA
+    const capaSuggestion = `CORRECTIVE ACTIONS:\n${correctiveSuggestion}\n\nPREVENTIVE ACTIONS:\n${preventiveSuggestion}`;
+    
+    console.log("🔧 Extracted suggestions:", {
+      rca: rcaSuggestion,
+      capa: capaSuggestion
+    });
+    
+    // Update the UI with AI suggestions
     suggestionContainer.innerHTML = `
-      <div class="ai-suggestions">
-        <div class="suggestion-section">
-          <h5><i class="fas fa-search"></i> Root Cause Analysis</h5>
-          <p class="suggestion-text">${rca}</p>
-          <button onclick="applyAISuggestion('rcaInput', \`${rca.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="apply-btn">
-            <i class="fas fa-check"></i> Apply RCA
+      <div class="ai-suggestions" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin: 10px 0;">
+        <h4 style="color: #007bff; margin-bottom: 15px; font-size: 14px;">
+          <i class="fas fa-robot"></i> AI-Generated Suggestions
+        </h4>
+        
+        <div style="margin-bottom: 15px;">
+          <strong style="color: #dc3545; font-size: 13px;">📋 Root Cause Analysis:</strong>
+          <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 12px; line-height: 1.4; border-left: 3px solid #dc3545;">
+            ${rcaSuggestion.replace(/^-\s*/gm, '• ')}
+          </div>
+          <button onclick="applyAISuggestion('rcaInput', \`${rcaSuggestion.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" 
+                  class="apply-btn" style="margin-top: 8px; padding: 4px 10px; font-size: 11px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Apply to RCA
           </button>
         </div>
         
-        <div class="suggestion-section">
-          <h5><i class="fas fa-tools"></i> Corrective & Preventive Action</h5>
-          <p class="suggestion-text">${capa}</p>
-          <button onclick="applyAISuggestion('capaInput', \`${capa.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="apply-btn">
-            <i class="fas fa-check"></i> Apply CAPA
+        <div>
+          <strong style="color: #28a745; font-size: 13px;">🔧 Corrective & Preventive Actions:</strong>
+          <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 12px; line-height: 1.4; border-left: 3px solid #28a745;">
+            ${capaSuggestion.replace(/^-\s*/gm, '• ').replace(/\n/g, '<br>')}
+          </div>
+          <button onclick="applyAISuggestion('capaInput', \`${capaSuggestion.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" 
+                  class="apply-btn" style="margin-top: 8px; padding: 4px 10px; font-size: 11px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Apply to CAPA
           </button>
+        </div>
+        
+        <div style="margin-top: 15px; font-size: 11px; color: #6c757d; text-align: center;">
+          <i class="fas fa-info-circle"></i> You can edit these suggestions before applying
         </div>
       </div>
     `;
-
-    console.log("✅ AI suggestions updated successfully");
     
   } catch (error) {
-    console.error('❌ AI suggestion error:', error);
+    console.error("❌ Error getting AI suggestions:", error);
     
     const suggestionContainer = document.getElementById(`aiSuggestion-${docId}`);
     if (suggestionContainer) {
       suggestionContainer.innerHTML = `
-        <div class="error-message">
-          <i class="fas fa-exclamation-circle"></i>
-          <div class="error-details">
-            <strong>Failed to get AI suggestions</strong>
-            <p>Error: ${error.message}</p>
-            <button onclick="getAISuggestionsForComplaint('${message.replace(/'/g, "\\'")}', '${docId}')" class="retry-btn">
-              <i class="fas fa-redo"></i> Try Again
-            </button>
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 10px 0;">
+          <div style="color: #856404; font-size: 13px;">
+            <i class="fas fa-exclamation-triangle"></i> AI analysis temporarily unavailable
+          </div>
+          <div style="font-size: 12px; color: #6c757d; margin-top: 8px;">
+            Please manually analyze the complaint: "${message}"
           </div>
         </div>
       `;
@@ -208,53 +160,65 @@ Please be concise and practical.`;
   }
 }
 
-// Enhanced apply function with better escaping
+// Enhanced apply function with better handling
 function applyAISuggestion(inputId, suggestion) {
-  console.log("🔧 Applying suggestion to:", inputId, "Content:", suggestion);
+  console.log("🔧 Applying AI suggestion to:", inputId);
   
   const textarea = document.getElementById(inputId);
   if (textarea) {
-    textarea.value = suggestion;
-    textarea.focus();
+    // Clean up the suggestion text
+    let cleanSuggestion = suggestion
+      .replace(/\*\*[^*]+:\*\*/g, '') // Remove markdown headers
+      .replace(/^\s*[-•]\s*/gm, '• ') // Normalize bullet points
+      .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
+      .trim();
+    
+    textarea.value = cleanSuggestion;
     
     // Visual feedback
     textarea.style.backgroundColor = '#e8f5e8';
     setTimeout(() => {
       textarea.style.backgroundColor = '';
-    }, 1500);
+    }, 2000);
     
-    console.log("✅ Suggestion applied successfully");
+    // Focus on the textarea
+    textarea.focus();
+    
+    console.log("✅ AI suggestion applied successfully");
+    
+    // Show confirmation
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✓ Applied';
+    button.style.backgroundColor = '#28a745';
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.style.backgroundColor = '';
+    }, 2000);
+    
   } else {
     console.error("❌ Textarea not found:", inputId);
+    alert("Unable to apply suggestion. Please copy manually.");
   }
 }
 
-// Test function to check API connectivity
-async function testAPIConnection() {
+// Test function for debugging
+async function testAISuggestions(testMessage = "The website was down for 2 hours and I couldn't complete my order") {
   try {
-    console.log("🔧 Testing API connection...");
-    
-    const response = await fetch('https://ai-backend-df9i.onrender.com/api/ai-summary', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messages: ["Test message"]
-      })
-    });
-    
-    console.log("📡 Test response status:", response.status);
-    console.log("📡 Test response headers:", response.headers);
-    
-    const data = await response.json();
-    console.log("📋 Test response data:", data);
-    
-    return response.ok;
+    console.log("🧪 Testing AI suggestions with message:", testMessage);
+    const response = await generateRcaCapaSuggestions(testMessage);
+    console.log("🧪 Test response:", response);
+    return response;
   } catch (error) {
-    console.error("❌ API test failed:", error);
-    return false;
+    console.error("🧪 Test failed:", error);
+    return null;
   }
 }
 
-// Call this function in browser console to test: testAPIConnection()
+// Make functions globally available
+window.getAISuggestionsForComplaint = getAISuggestionsForComplaint;
+window.applyAISuggestion = applyAISuggestion;
+window.testAISuggestions = testAISuggestions;
+
+console.log("🤖 AI RCA/CAPA suggestions module loaded successfully");

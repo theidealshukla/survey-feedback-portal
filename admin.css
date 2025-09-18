@@ -815,3 +815,119 @@ footer a:hover {
   color: #0056b3;
   text-decoration: underline;
 }
+
+/* Add these styles at the end of your CSS file */
+
+.ai-analysis-container {
+  font-family: 'Roboto', sans-serif;
+}
+
+.data-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.metric-card {
+  text-align: center;
+}
+
+.metric-number {
+  font-size: 28px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 5px;
+}
+
+.analysis-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-left: 4px solid #007bff;
+}
+
+.analysis-section.priority-issues {
+  border-left-color: #dc3545;
+}
+
+.analysis-section.recommendations {
+  border-left-color: #28a745;
+}
+
+.analysis-section h4 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-content {
+  color: #555;
+  line-height: 1.6;
+}
+
+.bullet-point {
+  margin: 8px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.bullet-point::before {
+  content: '•';
+  color: #007bff;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.content-paragraph {
+  margin: 10px 0;
+  color: #333;
+}
+
+.analysis-footer {
+  text-align: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  color: #666;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-state h3 {
+  margin: 15px 0 10px;
+  color: #333;
+}
+
+.retry-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.retry-btn:hover {
+  background: #0056b3;
+}
