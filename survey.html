@@ -2,193 +2,566 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Survey & Complaint Form</title>
+  <title>Customer Feedback — Smart Support Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Submit your feedback or complaint to help us improve our products and services." />
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <script>
-    emailjs.init("NqzIwh4ok1CVLyylH"); // Your EmailJS public key
-  </script>
-  <!-- Supabase JS SDK -->
+  <script>emailjs.init("NqzIwh4ok1CVLyylH");</script>
+
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
   <style>
+    /* ===== Variables ===== */
+    :root {
+      --white: #ffffff;
+      --bg: #f8f9fb;
+      --card: #ffffff;
+      --border: #e8ebf0;
+      --border-focus: #4f8cff;
+      --text-primary: #1a1d26;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --accent: #4f8cff;
+      --accent-hover: #3b7aed;
+      --accent-light: rgba(79, 140, 255, 0.08);
+      --green: #22c55e;
+      --green-light: rgba(34, 197, 94, 0.08);
+      --red: #ef4444;
+      --red-light: rgba(239, 68, 68, 0.06);
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.08);
+      --transition: 0.2s ease;
+    }
+
+    /* ===== Base ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 2rem;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
+      padding: 32px 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
-    .form-box, .thank-you {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      max-width: 600px;
+
+    /* ===== Form Container ===== */
+    .form-container {
       width: 100%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      max-width: 580px;
     }
-    .top-bar {
+
+    .form-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-md);
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Header ===== */
+    .form-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
     }
-    .top-bar a {
-      color: #007bff;
-      font-size: 0.9rem;
+
+    .form-header h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .form-header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .form-switch {
+      font-size: 13px;
+      color: var(--accent);
       text-decoration: none;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: var(--accent-light);
+      transition: all var(--transition);
+      white-space: nowrap;
+      margin-top: 2px;
     }
-    h2 {
-      margin-top: 0;
+
+    .form-switch:hover {
+      background: rgba(79, 140, 255, 0.14);
+      transform: translateY(-1px);
     }
-    label {
-      margin-top: 1rem;
+
+    .form-switch i {
+      margin-right: 4px;
+      font-size: 11px;
+    }
+
+    /* ===== Form Fields ===== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
       display: block;
-      font-weight: bold;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
     }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 0.3rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+
+    .form-group label .required {
+      color: var(--red);
+      margin-left: 2px;
     }
-    button {
-      margin-top: 1.5rem;
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 12px;
+
+    .form-group label .hint {
+      font-weight: 400;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-left: 4px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select,
+    textarea {
       width: 100%;
-      border-radius: 6px;
-      font-size: 1rem;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-primary);
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      transition: all var(--transition);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.937 10.825 4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
       cursor: pointer;
     }
-    .thank-you {
-      text-align: center;
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.12);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ===== NPS Scale ===== */
+    .nps-scale {
+      display: flex;
+      gap: 0;
+      margin-top: 6px;
+    }
+
+    .nps-scale input[type="radio"] {
       display: none;
     }
-    .emoji {
-      font-size: 2.5rem;
-      animation: bounce 1.5s infinite;
+
+    .nps-scale label {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: all var(--transition);
+      margin: 0;
     }
+
+    .nps-scale label:first-of-type {
+      border-radius: var(--radius) 0 0 var(--radius);
+    }
+
+    .nps-scale label:last-of-type {
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .nps-scale label:not(:first-of-type) {
+      border-left: none;
+    }
+
+    .nps-scale input[type="radio"]:checked + label {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px rgba(79, 140, 255, 0.3);
+    }
+
+    .nps-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .nps-labels span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ===== Submit Button ===== */
+    .submit-btn {
+      width: 100%;
+      padding: 13px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      color: white;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-top: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(79, 140, 255, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .submit-btn i {
+      margin-right: 6px;
+    }
+
+    /* ===== Thank You ===== */
+    .thank-you {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 60px 32px;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+      display: none;
+      animation: slideUp 0.5s ease;
+    }
+
+    .thank-you .emoji {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+      animation: bounce 2s infinite;
+    }
+
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-8px); }
+    }
+
+    .thank-you h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .thank-you p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .thank-you .ticket-id {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 20px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+    }
+
+    .thank-you .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .thank-you .back-link:hover {
+      text-decoration: underline;
+    }
+
+    /* ===== Field Row (side by side) ===== */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text-primary);
+      color: white;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast i {
+      margin-right: 6px;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 480px) {
+      body { padding: 16px 12px; }
+      .form-box { padding: 28px 20px; }
+      .form-header { flex-direction: column; gap: 12px; }
+      .form-row { grid-template-columns: 1fr; }
+      .nps-scale label { padding: 8px 0; font-size: 12px; }
     }
   </style>
 </head>
 <body>
 
-<!-- Survey Form -->
-<div class="form-box" id="surveyBox">
-  <div class="top-bar">
-    <h2>Product Experience Survey</h2>
-    <a href="#" id="goToComplaint">Raise a Complaint</a>
+<div class="form-container">
+  <!-- ===== SURVEY FORM ===== -->
+  <div class="form-box" id="surveyBox">
+    <div class="form-header">
+      <div>
+        <h2>Product Experience Survey</h2>
+        <p>Help us improve — your feedback matters</p>
+      </div>
+      <a href="#" class="form-switch" id="goToComplaint">
+        <i class="fas fa-exclamation-circle"></i> Raise Complaint
+      </a>
+    </div>
+
+    <form id="surveyForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" id="s-name" placeholder="John Doe" required />
+        </div>
+        <div class="form-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" id="s-email" placeholder="john@example.com" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product Quality <span class="required">*</span></label>
+          <select id="s-quality" required>
+            <option value="">Select rating</option>
+            <option>Excellent</option>
+            <option>Good</option>
+            <option>Average</option>
+            <option>Poor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ease of Use <span class="required">*</span></label>
+          <select id="s-ease" required>
+            <option value="">Select rating</option>
+            <option>Very Easy</option>
+            <option>Easy</option>
+            <option>Neutral</option>
+            <option>Difficult</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Would you recommend us? <span class="required">*</span></label>
+        <select id="s-recommend" required>
+          <option value="">Select option</option>
+          <option>Definitely</option>
+          <option>Maybe</option>
+          <option>Not Sure</option>
+          <option>No</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>How likely are you to recommend us? <span class="hint">(NPS Score)</span></label>
+        <div class="nps-scale">
+          <input type="radio" name="nps" id="nps-0" value="0" /><label for="nps-0">0</label>
+          <input type="radio" name="nps" id="nps-1" value="1" /><label for="nps-1">1</label>
+          <input type="radio" name="nps" id="nps-2" value="2" /><label for="nps-2">2</label>
+          <input type="radio" name="nps" id="nps-3" value="3" /><label for="nps-3">3</label>
+          <input type="radio" name="nps" id="nps-4" value="4" /><label for="nps-4">4</label>
+          <input type="radio" name="nps" id="nps-5" value="5" /><label for="nps-5">5</label>
+          <input type="radio" name="nps" id="nps-6" value="6" /><label for="nps-6">6</label>
+          <input type="radio" name="nps" id="nps-7" value="7" /><label for="nps-7">7</label>
+          <input type="radio" name="nps" id="nps-8" value="8" /><label for="nps-8">8</label>
+          <input type="radio" name="nps" id="nps-9" value="9" /><label for="nps-9">9</label>
+          <input type="radio" name="nps" id="nps-10" value="10" /><label for="nps-10">10</label>
+        </div>
+        <div class="nps-labels">
+          <span>Not at all likely</span>
+          <span>Extremely likely</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Additional Feedback <span class="hint">(Optional)</span></label>
+        <textarea id="s-feedback" placeholder="Tell us more about your experience..." rows="4"></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="surveySubmitBtn">
+        <i class="fas fa-paper-plane"></i> Submit Survey
+      </button>
+    </form>
   </div>
-  <form id="surveyForm">
-    <label>Name</label>
-    <input type="text" id="s-name" required />
 
-    <label>Email</label>
-    <input type="email" id="s-email" required />
+  <!-- ===== COMPLAINT FORM ===== -->
+  <div class="form-box" id="complaintBox" style="display: none;">
+    <div class="form-header">
+      <div>
+        <h2>Raise a Complaint</h2>
+        <p>We'll assign a ticket and get back to you</p>
+      </div>
+      <a href="#" class="form-switch" id="goToSurvey">
+        <i class="fas fa-arrow-left"></i> Back to Survey
+      </a>
+    </div>
 
-    <label>How would you rate the product quality?</label>
-    <select id="s-quality" required>
-      <option value="">Select</option>
-      <option>Excellent</option>
-      <option>Good</option>
-      <option>Average</option>
-      <option>Poor</option>
-    </select>
+    <form id="complaintForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" id="c-name" placeholder="John Doe" required />
+        </div>
+        <div class="form-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" id="c-email" placeholder="john@example.com" required />
+        </div>
+      </div>
 
-    <label>Ease of use?</label>
-    <select id="s-ease" required>
-      <option value="">Select</option>
-      <option>Very Easy</option>
-      <option>Easy</option>
-      <option>Neutral</option>
-      <option>Difficult</option>
-    </select>
+      <div class="form-group">
+        <label>Complaint Type <span class="required">*</span></label>
+        <select id="c-type" required>
+          <option value="">Select type</option>
+          <option>Service Delay</option>
+          <option>Product Issue</option>
+          <option>Staff Behavior</option>
+          <option>Billing Issue</option>
+          <option>Other</option>
+        </select>
+      </div>
 
-    <label>Would you recommend us?</label>
-    <select id="s-recommend" required>
-      <option value="">Select</option>
-      <option>Definitely</option>
-      <option>Maybe</option>
-      <option>Not Sure</option>
-      <option>No</option>
-    </select>
-    <!-- INSIDE SURVEY FORM -->
+      <div class="form-group">
+        <label>Describe your issue <span class="required">*</span></label>
+        <textarea id="c-msg" rows="5" placeholder="Please describe your complaint in detail..." required></textarea>
+      </div>
 
-<label>On a scale of 0 to 10, how likely are you to recommend our product/service to others?</label>
-<select id="s-nps" required>
-  <option value="">Select</option>
-  <option value="10">10 - Extremely likely</option>
-  <option value="9">9</option>
-  <option value="8">8</option>
-  <option value="7">7</option>
-  <option value="6">6</option>
-  <option value="5">5</option>
-  <option value="4">4</option>
-  <option value="3">3</option>
-  <option value="2">2</option>
-  <option value="1">1</option>
-  <option value="0">0 - Not at all likely</option>
-</select>
-
-
-    <label>Additional Feedback</label>
-    <textarea id="s-feedback" rows="4"></textarea>
-
-    <button type="submit">Submit Survey</button>
-  </form>
-</div>
-
-<!-- Complaint Form -->
-<div class="form-box" id="complaintBox" style="display: none;">
-  <div class="top-bar">
-    <h2>Raise a Complaint / Query</h2>
-    <a href="#" id="goToSurvey">Back to Survey</a>
+      <button type="submit" class="submit-btn" id="complaintSubmitBtn">
+        <i class="fas fa-paper-plane"></i> Submit Complaint
+      </button>
+    </form>
   </div>
-  <form id="complaintForm">
-    <label>Name</label>
-    <input type="text" id="c-name" required />
 
-    <label>Email</label>
-    <input type="email" id="c-email" required />
-
-    <label>Complaint Type</label>
-    <select id="c-type" required>
-      <option value="">Select</option>
-      <option>Service Delay</option>
-      <option>Product Issue</option>
-      <option>Staff Behavior</option>
-      <option>Other</option>
-    </select>
-
-    <label>Message</label>
-    <textarea id="c-msg" rows="5" required></textarea>
-
-    <button type="submit">Submit Complaint</button>
-  </form>
+  <!-- ===== THANK YOU ===== -->
+  <div class="thank-you" id="thankYouBox">
+    <div class="emoji">🎉</div>
+    <h2>Thank You!</h2>
+    <p>Your response has been recorded successfully.</p>
+    <div id="ticketInfo" class="ticket-id"></div>
+    <br />
+    <a href="#" class="back-link" onclick="location.reload()">
+      <i class="fas fa-arrow-left"></i> Submit another response
+    </a>
+  </div>
 </div>
 
-<!-- Thank You Screen -->
-<div class="thank-you" id="thankYouBox">
-  <div class="emoji">🙏</div>
-  <h2>Thank you for your time!</h2>
-  <p>Your response has been recorded.</p>
-  <p id="ticketInfo" style="font-weight: bold;"></p>
-</div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
+<script src="db-config.js?v=1.0.1"></script>
 <script>
-  // Supabase Setup
-  const SUPABASE_URL = 'https://wqgaboyirihxccrzsjnn.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZ2Fib3lpcmloeGNjcnpzam5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyNzA1NzAsImV4cCI6MjA3Mjg0NjU3MH0.9JOkoTP6cVZYbVD0I9BzH5Jm06t1us4xvjMcpsFNYrY';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // DB setup loaded via db-config.js
+
+  // Toast notification
+  function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    toast.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#1a1d26';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
 
   // Toggle between forms
   document.getElementById("goToComplaint").onclick = (e) => {
@@ -207,83 +580,77 @@
     return "CMP-" + Math.random().toString(36).substr(2, 6).toUpperCase();
   }
 
-  // Survey Submit (Supabase)
+  // Survey Submit
   document.getElementById("surveyForm").addEventListener("submit", async function (e) {
     e.preventDefault();
+    const btn = document.getElementById("surveySubmitBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
     const name = document.getElementById("s-name").value;
     const email = document.getElementById("s-email").value;
     const quality = document.getElementById("s-quality").value;
     const ease = document.getElementById("s-ease").value;
     const recommend = document.getElementById("s-recommend").value;
-    const npsScore = parseInt(document.getElementById("s-nps").value);
+    const npsRadio = document.querySelector('input[name="nps"]:checked');
+    const npsScore = npsRadio ? parseInt(npsRadio.value) : null;
     const feedback = document.getElementById("s-feedback").value;
 
-    const { data, error } = await supabase
-      .from("surveys")
-      .insert([
-        {
-          name,
-          email,
-          quality,
-          ease,
-          recommend,
-          nps_score: npsScore, // CORRECTED to snake_case
-          feedback
-        }
-      ]);
+    if (!npsScore && npsScore !== 0) {
+      showToast("Please select an NPS score", "error");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Survey';
+      return;
+    }
+
+    const { error } = await DB.insertRow("Surveys", {
+      name, email, quality, ease, recommend, nps_score: npsScore, feedback
+    });
 
     if (error) {
-      console.error("Supabase error:", error);
-      alert("Failed to submit survey. Error: " + error.message);
+      console.error("Database error:", error);
+      showToast("Failed to submit: " + error, "error");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Survey';
     } else {
-      console.log("Survey submitted successfully:", data);
       document.getElementById("surveyBox").style.display = "none";
       document.getElementById("ticketInfo").innerText = "Thank you for your feedback!";
+      document.getElementById("ticketInfo").className = "ticket-id";
       document.getElementById("thankYouBox").style.display = "block";
+      showToast("Survey submitted successfully!", "success");
     }
   });
 
-  // Complaint Submit (Supabase)
+  // Complaint Submit
   document.getElementById("complaintForm").addEventListener("submit", async function (e) {
     e.preventDefault();
+    const btn = document.getElementById("complaintSubmitBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
     const name = document.getElementById("c-name").value;
     const email = document.getElementById("c-email").value;
     const type = document.getElementById("c-type").value;
     const message = document.getElementById("c-msg").value;
     const ticketId = generateTicketId();
 
-    // Save to Supabase
-    const { data, error } = await supabase
-      .from("complaints")
-      .insert([
-        {
-          name,
-          email,
-          type,
-          message,
-          ticket_id: ticketId, // CORRECTED to snake_case
-          status: "open"
-        }
-      ]);
+    const { error } = await DB.insertRow("Complaints", {
+      name, email, type, message, ticket_id: ticketId
+    });
 
     if (error) {
-      console.error("Supabase error:", error);
-      alert("Failed to submit complaint. Error: " + error.message);
+      console.error("Database error:", error);
+      showToast("Failed to submit: " + error, "error");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Complaint';
     } else {
-      console.log("Complaint submitted successfully:", data);
+      // Email notification handled securely by Google Apps Script backend
 
-      // Send email via EmailJS (optional)
-      emailjs.send("service_7y35doh", "template_ypnghxy", {
-        to_name: name,
-        to_email: email,
-        message: message,
-        ticket_id: ticketId
-      }).catch(err => console.error("Email sending failed:", err));
-
-      // Show thank you screen
       document.getElementById("complaintBox").style.display = "none";
-      document.getElementById("ticketInfo").innerText = `Your Ticket ID is: ${ticketId}`;
+      document.getElementById("ticketInfo").innerHTML = `Your Ticket ID: <strong>${ticketId}</strong>`;
+      document.getElementById("ticketInfo").className = "ticket-id";
       document.getElementById("thankYouBox").style.display = "block";
+      showToast("Complaint submitted! Ticket: " + ticketId, "success");
     }
   });
 </script>

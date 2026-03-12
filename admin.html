@@ -2,99 +2,194 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard — Smart Support Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="AI-powered admin dashboard for managing customer feedback, complaints, and surveys." />
 
-    <!-- Firebase SDK (Keep for Authentication) -->
+    <!-- Firebase SDK (Auth only) -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     
-    <!-- Add Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+    <!-- Supabase SDK -->
+    <link rel="stylesheet" href="admin.css" />
+
+    <!-- Chart.js for NPS trends + sentiment distribution -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="admin.css" />
-    <link
-      href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
+
+    <!-- Theme Initializer -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('app-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
-    <div class="header">
-      <h1>Admin Dashboard</h1>
-      <button class="logout" onclick="logout()">Logout</button>
+    <div class="dashboard-wrapper animate-in">
+      <!-- ===== HEADER ===== -->
+      <div class="header">
+        <div class="header-left">
+          <img class="header-logo" src="LOGO.png" alt="Logo" />
+          <h1><span>Smart</span> Support Portal</h1>
+        </div>
+        <div class="header-right">
+          <button id="themeToggleBtn" class="btn-icon" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fas fa-moon"></i>
+          </button>
+          <button class="btn-destructive" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== METRIC CARDS ===== -->
+      <div class="cards">
+        <div class="card delay-100">
+          <div class="card-header">
+            <h2 class="card-title">Total Submissions</h2>
+            <i class="fas fa-inbox card-icon"></i>
+          </div>
+          <div class="card-value" id="totalSubmissions">0</div>
+        </div>
+        <div class="card delay-100">
+          <div class="card-header">
+            <h2 class="card-title">Open Tickets</h2>
+            <i class="fas fa-ticket-alt card-icon"></i>
+          </div>
+          <div class="card-value" id="openTickets">0</div>
+        </div>
+        <div class="card delay-200">
+          <div class="card-header">
+            <h2 class="card-title">Resolved Today</h2>
+            <i class="fas fa-check-circle card-icon"></i>
+          </div>
+          <div class="card-value" id="resolvedToday">0</div>
+        </div>
+        <div class="card delay-300">
+          <div class="card-header">
+            <h2 class="card-title">NPS Score</h2>
+            <i class="fas fa-chart-line card-icon"></i>
+          </div>
+          <div class="card-value" id="npsScore">0</div>
+        </div>
+      </div>
+
+      <!-- ===== CHARTS ===== -->
+      <div class="charts-section">
+        <div class="chart-card">
+          <h3><i class="fas fa-chart-area"></i> NPS Trend</h3>
+          <div class="chart-wrapper">
+            <canvas id="npsTrendChart"></canvas>
+          </div>
+          <div class="nps-breakdown" id="npsBreakdown">
+            <div class="nps-breakdown-item promoters">
+              <span class="count" id="promoterCount">0</span>
+              <span class="label">Promoters</span>
+            </div>
+            <div class="nps-breakdown-item passives">
+              <span class="count" id="passiveCount">0</span>
+              <span class="label">Passives</span>
+            </div>
+            <div class="nps-breakdown-item detractors">
+              <span class="count" id="detractorCount">0</span>
+              <span class="label">Detractors</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fas fa-chart-pie"></i> Sentiment Distribution</h3>
+          <div class="chart-wrapper">
+            <canvas id="sentimentChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FILTERS ===== -->
+      <div class="filters">
+        <select id="filterType" onchange="loadDashboard()">
+          <option value="all">All Types</option>
+          <option value="complaint">Complaint</option>
+          <option value="survey">Survey</option>
+        </select>
+        <select id="filterStatus" onchange="loadDashboard()">
+          <option value="all">All Status</option>
+          <option value="open">Open</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <select id="dateFilter" onchange="handleDateFilter()">
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom Range</option>
+        </select>
+        <div id="customDateInputs" style="display: none">
+          <input type="date" id="startDate" onchange="loadDashboard()" />
+          <input type="date" id="endDate" onchange="loadDashboard()" />
+        </div>
+        <div class="search-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" class="search-input" id="searchInput" placeholder="Search by name, email, message..." oninput="filterTable()" />
+        </div>
+        <button onclick="exportToCSV()" class="btn-outline export-btn">
+          <i class="fas fa-download"></i> Export CSV
+        </button>
+      </div>
+
+      <!-- ===== DATA TABLE ===== -->
+      <div class="table-container">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Sentiment</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="dataTable"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="paginationControls">
+          <button id="prevPage" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i> Prev</button>
+          <span class="page-info" id="pageInfo">Page 1</span>
+          <button id="nextPage" onclick="changePage(1)">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ===== AI SUMMARY ===== -->
+      <div id="aiSummary" class="ai-summary-modern">
+        <div class="ai-summary-header">
+          <div>
+            <i class="fas fa-robot"></i>
+            <span>AI-Powered Insights</span>
+          </div>
+          <button class="ai-refresh-btn btn-icon" onclick="fetchAIComplaintSummary()" title="Refresh AI Analysis">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <div class="ai-content">
+          <div class="ai-summary-content">Loading AI analysis...</div>
+        </div>
+        <div class="ai-summary-footer">
+          <span id="aiSummaryMeta"></span>
+        </div>
+      </div>
+
     </div>
 
-    <div class="cards">
-      <div class="card">
-        <h2 id="totalSubmissions">0</h2>
-        <p>Total Submissions</p>
-      </div>
-      <div class="card">
-        <h2 id="openTickets">0</h2>
-        <p>Open Tickets</p>
-      </div>
-      <div class="card">
-        <h2 id="resolvedToday">0</h2>
-        <p>Resolved Today</p>
-      </div>
-      <div class="card">
-        <h2 id="npsScore">0</h2>
-        <p>NPS Score</p>
-      </div>
-    </div>
-
-    <div class="filters">
-      <select id="filterType" onchange="loadDashboard()">
-        <option value="all">All Types</option>
-        <option value="complaint">Complaint</option>
-        <option value="survey">Survey</option>
-      </select>
-      <select id="filterStatus" onchange="loadDashboard()">
-        <option value="all">All Status</option>
-        <option value="open">Open</option>
-        <option value="resolved">Resolved</option>
-      </select>
-
-      <select id="dateFilter" onchange="handleDateFilter()">
-        <option value="all">All Time</option>
-        <option value="today">Today</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-        <option value="custom">Custom Date Range</option>
-      </select>
-
-      <div id="customDateInputs" style="display: none">
-        <input type="date" id="startDate" onchange="loadDashboard()" />
-        <input type="date" id="endDate" onchange="loadDashboard()" />
-      </div>
-
-      <button onclick="exportToCSV()" class="export-btn">Export to CSV</button>
-    </div>
-
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Sentiment</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="dataTable"></tbody>
-      </table>
-    </div>
-
-    <!-- Add AI Analysis Card -->
-
+    <!-- ===== MODAL ===== -->
     <div class="modal" id="viewModal">
       <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
@@ -104,45 +199,56 @@
       </div>
     </div>
 
-    <div id="aiSummary" class="ai-summary-modern">
-      <div class="ai-summary-header">
-        <i class="fas fa-robot"></i>
-        <span>AI Summary</span>
-        <!-- This is the heading -->
-        <button
-          class="ai-refresh-btn"
-          onclick="fetchAIComplaintSummary()"
-          title="Refresh"
-        >
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-      <div class="ai-content">
-        <div class="ai-summary-content">Loading summary...</div>
-      </div>
-
-      <div class="ai-summary-footer">
-        <span id="aiSummaryMeta"></span>
-      </div>
+    <!-- ===== FOOTER (still inside wrapper logic, but we'll move wrapper end above) ===== -->
+    <div class="dashboard-wrapper" style="padding-top:0;">
+      <footer>
+        <p>
+          Built with <span style="color: #ef4444;">❤️</span> &copy; 2025 Smart Support Portal &mdash;
+          <a href="https://surveyformnf.netlify.app/" target="_blank" rel="noopener noreferrer">
+            Submit Feedback
+          </a>
+        </p>
+      </footer>
     </div>
 
-    <footer>
-      <p>
-        Made with ❤️ © 2025. All rights reserved. |
-        <a
-          href="https://surveyformnf.netlify.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Fill Out the Official Survey/Complaint Form
-        </a>
-        — your responses will appear live on the admin dashboard!
-      </p>
-    </footer>
-
-    <!-- Load JavaScript last -->
+    <!-- Scripts (order matters) -->
+    <script src="db-config.js?v=1.0.1"></script>
+    <script src="ai-config.js"></script>
     <script src="admin.js"></script>
     <script src="ai-analysis.js"></script>
     <script src="ai-rca-capa-suggestions.js"></script>
+    <script>
+      // Theme Toggle Logic
+      function toggleTheme() {
+        const root = document.documentElement;
+        let newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', newTheme);
+        localStorage.setItem('app-theme', newTheme);
+        
+        // Update button icon
+        const icon = document.querySelector('#themeToggleBtn i');
+        if (newTheme === 'dark') {
+          icon.className = 'fas fa-sun';
+        } else {
+          icon.className = 'fas fa-moon';
+        }
+
+        // Emit an event so charts can re-render colors
+        window.dispatchEvent(new Event('themeChanged'));
+      }
+
+      // Initial render for toggle icon
+      document.addEventListener('DOMContentLoaded', () => {
+        const theme = localStorage.getItem('app-theme') || 'light';
+        const icon = document.querySelector('#themeToggleBtn i');
+        if (icon) {
+            if (theme === 'dark') {
+               icon.className = 'fas fa-sun';
+            } else {
+               icon.className = 'fas fa-moon';
+            }
+        }
+      });
+    </script>
   </body>
 </html>
